@@ -1,0 +1,39 @@
+# comment 
+
+import
+	some_file.ax
+	another_file.ax	
+end
+
+type Tree of a where
+	| Leaf
+	| Node of Tree a, a, Tree a
+end
+
+let treemap f t : (a -> b) -> Tree a -> Tree b =
+	match t with
+	| Leaf -> Leaf
+	| Node (l, v, r) -> Node $ treemap f l, f v, treemap f r
+in 
+
+let (++) xs ys : [a] -> [a] -> [a] =
+	match xs with
+	| [] -> ys
+	| x::xs -> x :: (xs ++ ys)
+in
+
+let odd n :=
+	match n with
+	| 1 -> true
+	| n -> not $ even $ n-1
+and even n :=
+	match n with
+	| 0 -> false
+	| n -> not $ odd $ n-1
+in
+
+let _ =
+	let n = read_int () in
+	print (odd n)
+
+

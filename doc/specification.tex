@@ -1,0 +1,163 @@
+\documentclass[12pt]{article}
+\usepackage[polish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{syntax}
+
+\setlength{\grammarindent}{5em}
+
+\title{\huge
+    \textbf{Statycznie typowany funkcyjny język programowania o ewaluacji leniwej}}
+\date {Kurs języka Prolog (Q1) -- projekt końcowy}
+\author{\Large Jakub Grobelny}
+
+\begin{document}
+
+\maketitle
+
+\section{Struktura leksykalna i składnia}
+
+Klasyfikacja znaków:
+\begin{itemize}
+    \item \textit{biały znak} --- znaki ASCII: HT, LF, CR, LF, SPACE
+    \item \textit{cyfra} --- znaki ASCII: 0-9
+    \item \textit{mała litera} --- znaki Unicode będące małymi literami 
+    \footnote{Wszystkie takie znaki \textbf{X}, że spełniony jest predykat 
+        \texttt{char\textunderscore type(X,lower)} w SWI Prologu.}
+    \item \textit{wielka litera} --- znaki Unicode będące wielkimi literami
+    \footnote{Analogicznie jak wyżej, tylko 
+        \texttt{char\textunderscore type(X, upper)}.}
+\end{itemize}
+
+\subsection{Struktura leksykalna}
+
+\textit{Komentarz} to ciąg znaków rozpoczynających się znakiem \texttt{\#}, 
+zakończony znakiem nowej linii.
+
+\textit{Token} to najdłuższy ciąg znaków niezawierający \textit{komentarzy} ani 
+\textit{białych znaków}, taki, że opisuje go poniższa gramatyka:
+
+\begin{grammar}
+
+<literał-całkowitoliczbowy> ::=
+    \textit{cyfra} 
+    \alt \textit{cyfra} <literał-całkowitoliczbowy>
+
+<literał-znakowy> ::=
+    \textbf{'} <znak> \textbf{'}
+
+<literał-napisowy> ::=
+    \textbf{\"} <ciąg-znaków> \textbf{\"}
+
+<literał-zmiennopozycyjny> ::=
+    <ułamek>
+    \alt <ułamek> <wykładnik>
+
+<słowo-kluczowe> ::=
+    \textbf{let}
+    | \textbf{and}
+    | \textbf{in}
+    | \textbf{if}
+    | \textbf{then}
+    \alt \textbf{match}
+    | \textbf{else}
+    | \textbf{with}
+    | \textbf{type}
+    | \textbf{of}
+    | \textbf{where}
+    \alt \textbf{true}
+    | \textbf{false}
+    | \textbf{import}
+    | \textbf{fun}
+
+<operator> ::= <znak-specjalny> | <operator> <znak-specjalny>
+
+<identifikator> ::= 
+    \textit{mała litera} <alfanum>, taki, że nie jest <słowo-kluczowe>
+
+<nazwa-typu> ::=
+    \textit{wielka litera} <alfanum>
+
+\end{grammar}
+
+gdzie\\
+
+\begin{grammar}
+
+<znak-specjalny> ::=
+    \textbf{+}
+    | \textbf{\texttt{-}}
+    | \textbf{\texttt{*}}
+    | \textbf{\texttt{/}}
+    | \textbf{\texttt{=}}
+    | \textbf{\texttt{:}}
+    | \textbf{\texttt{\textgreater}}
+    \alt \textbf{\texttt{\textless}}
+    | \textbf{\&}
+    | \textbf{\texttt{!}}
+    | \textbf{\texttt{|}}
+    | \textbf{\texttt{\$}}
+    | \textbf{\texttt{@}}
+    | \textbf{\texttt{\%}}
+    | \textbf{\texttt{\^}}
+    | \textbf{\texttt{\~}}
+
+    <znak> ::= 
+        \textit{dowolny znak Unicode oprócz 
+            \textbf{"\\"}, \textbf{"\""}, \textbf{"\'"}}
+        \alt \textbf{"\\"n}\,
+        | \textbf{"\\"b}\,
+        | \textbf{"\\"f}\,
+        | \textbf{"\\"a}\,
+        | \textbf{"\\"r}\,
+        | \textbf{"\\"t}\,
+        | \textbf{"\\"v}\,
+        | \textbf{"\\\\"}\,
+        | \textbf{"\\"'}\,
+        | \textbf{"\\\""}\,
+
+    <ciąg-znaków> ::=
+        <znak>
+        \alt <ciąg-znaków> <znak>
+    
+    <litera> ::=
+        \textit{mała litera}
+        \alt \textit{wielka litera}
+
+    <alfanum> ::=
+        <litera>
+        \alt <alfanum> <litera>
+        \alt <alfanum> <cyfra>
+
+    <ułamek> ::=
+        <literał-całkowitoliczbowy> \textbf{.} <literał-całkowitoliczbowy>
+    
+    <wykładnik> ::=
+        \textbf{e} \textbf{-} <literał-całkowitoliczbowy>
+        \alt \textbf{e} <literał-całkowitoliczbowy>
+
+\end{grammar}
+
+\subsection{Składnia}
+
+\begin{grammar}
+
+<program> ::= 
+    <wyrażenie>
+    \alt <definicja-typu> <program>
+    \alt <import> <program>
+
+<wyrażenie> ::=
+    <wyrażenie> \textbf{;} <wyrażenie>
+    \alt <definicja> \textbf{in} <wyrażenie>
+    \alt \textbf{(} <wyrażenie> \textbf{)}
+    \alt <wyrażenie-arytmetyczne>
+    \alt <literał-napisowy>
+    \alt <literał-znakowy>
+
+    % TODO: TODO: TODO:
+
+\end{grammar}
+
+\section{Semantyka}
+\end{document}
