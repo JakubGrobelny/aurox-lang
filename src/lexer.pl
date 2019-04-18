@@ -34,6 +34,10 @@ alphanum_char(Char) --> digit(Char).
 
 digit(D) --> [D], { char_type(D, digit) }.
 
+string_delimiter --> ['"'].
+
+char_delimiter --> ['\''].
+
 whitespace --> [' '].
 whitespace --> ['\r'].
 whitespace --> ['\t'].
@@ -115,6 +119,8 @@ classify_number(Digits, Fractional, float(X)) :-
     atomic_list_concat(Number, NumAtom),
     atom_number(NumAtom, X).
 
+% TODO: write text_sequence/4 
+
 continuous_sequence([]) --> [eof], !.
 continuous_sequence([]) --> whitespace, !.
 continuous_sequence([]) --> newline, !.
@@ -153,6 +159,10 @@ lexer([Num at pos(L, C) | Tokens], pos(L, C)) -->
         NC is C + Len + FLen + 1,
         classify_number([D | Digits], FTail, Num)
     }, lexer(Tokens, pos(L, NC)).
+lexer([Text at pos(L, C) | Tokens], pos(L, C)) -->
+    text_sequence(Text, Len), !, lexer(Tokens, pos(L, NC)), {
+        NC is C + Len
+    }.
 lexer([], Pos), [error(Err) at Pos] --> [X], continuous_sequence(Characters), {
     atomic_list_concat([X | Characters], Err)
 }.
