@@ -1,5 +1,5 @@
 :- [utility].
-:- op(200, xfx, user:(at)).
+:- op(200, xfx, at).
 
 char_codes_to_atoms([], [eof]) :-
     !.
@@ -77,6 +77,20 @@ special(Char) --> [Char], {
     )
 }.
 
+wrap_if_keyword(Atom, keyword(Atom)) :-
+    member(
+        Atom,
+        [
+            let, and, in, if, 
+            then, match, else, 
+            with, type, of, 
+            where, true, false, 
+            import, fun, define
+        ]
+    ),
+    !.
+wrap_if_keyword(Atom, id(Atom)).
+
 continuous_sequence([]) --> [eof], !.
 continuous_sequence([]) --> whitespace, !.
 continuous_sequence([]) --> newline, !.
@@ -85,7 +99,7 @@ continuous_sequence([]) --> [].
 
 operator_tail([OpHead | OpTail], N) --> 
     special(OpHead), !, operator_tail(OpTail, M), { N is M + 1 }.
-operator_tail([], 1) --> [].
+operator_tail([], 0) --> [].
 
 lexer([], _) --> [eof], !.
 lexer(Tokens, pos(L, C)) -->
@@ -96,7 +110,7 @@ lexer(Tokens, pos(L, _)) -->
     ['#'], !, comment_tail, { NL is L + 1 }, lexer(Tokens, pos(NL, 1)).
 lexer([op(Op) at pos(L, C) | Tokens], pos(L, C)) --> 
     special(OpHead), !, operator_tail(OpTail, Len), 
-    { NC is C + Len }, lexer(Tokens, pos(L, NC)), {
+    { NC is C + Len + 1 }, lexer(Tokens, pos(L, NC)), {
         atomic_list_concat([OpHead | OpTail], Op)
     }.
 lexer([tid(TId) at pos(L, C) | Tokens], pos(L, C)) -->
@@ -104,19 +118,23 @@ lexer([tid(TId) at pos(L, C) | Tokens], pos(L, C)) -->
     lexer(Tokens, pos(L, NC)), {
         atomic_list_concat([Letter | Tail], TId)
     }.
+lexer([Token at pos(L, C) | Tokens], pos(L, C)) -->
+    lowercase(Letter), !, alphanum(Tail, Len), { NC is C + Len + 1 }, 
+    lexer(Tokens, pos(L, NC)), {
+        atomic_list_concat([Letter | Tail], Atom),
+        wrap_if_keyword(Atom, Token)
+    }.
 lexer([], Pos), [error(Err) at Pos] --> [X], continuous_sequence(Characters), {
     atomic_list_concat([X | Characters], Err)
 }.
 
-:- op(1200, xfx, user:(==>)).
-% TODO: expand_term/2
-
-
-
-
-
-
-
+% TODO: term_expansion
+% :- op(1200,xfx,==>).
+% term_expansion((Rule ==> Lhs, Op, Rhs),
+%     [(addition --> addend, addition__),
+%      (addition__ --> ['+'], !, addend, addition__),
+%      (addition__ --> [])
+% ]).
 
 
 
