@@ -7,7 +7,7 @@
 \setlength{\grammarindent}{5em}
 
 \title{\huge
-    \textbf{Statycznie typowany funkcyjny język programowania o ewaluacji leniwej}}
+    \textbf{Statycznie typowany funkcyjny język programowania}}
 \date {Kurs języka Prolog (Q1) -- projekt końcowy}
 \author{\Large Jakub Grobelny}
 
@@ -44,10 +44,12 @@ zakończony znakiem nowej linii.
     \alt \textit{cyfra} <literał-całkowitoliczbowy>
 
 <literał-znakowy> ::=
-    \textbf{'} <znak> \textbf{'}
+    \textbf{''}
+    \alt \textbf{'} <znak> \textbf{'}
 
 <literał-napisowy> ::=
-    \textbf{\"} <ciąg-znaków> \textbf{\"}
+    \textbf{"\"\""}
+    \alt \textbf{\"} <ciąg-znaków> \textbf{\"}
 
 <literał-zmiennopozycyjny> ::=
     <ułamek>
@@ -69,6 +71,7 @@ zakończony znakiem nowej linii.
     | \textbf{false}
     | \textbf{import}
     | \textbf{fun}
+    | \textbf{define}
 
 <operator> ::= <znak-specjalny> | <operator> <znak-specjalny>
 
@@ -113,6 +116,7 @@ gdzie\\
         | \textbf{"\\"a}\,
         | \textbf{"\\"r}\,
         | \textbf{"\\"t}\,
+        | \textbf{"\\0"}\,
         | \textbf{"\\"v}\,
         | \textbf{"\\\\"}\,
         | \textbf{"\\"'}\,
@@ -164,4 +168,7 @@ gdzie\\
 \end{grammar}
 
 \section{Semantyka}
+
+\section{System typów}
+
 \end{document}

@@ -4,12 +4,12 @@ char_codes_to_atoms([Char | Chars], [Atom | Atoms]) :-
     char_code(Atom, Char),
     char_codes_to_atoms(Chars, Atoms).
 
-tokenize_file(FileName, Tokens) :-
+tokenize_file(FileName, Tokens, pos(L, C)) :-
     open(FileName, read, Stream),
     read_string(Stream, "", "", _, String),
     string_to_list(String, ListOfChars),
     char_codes_to_atoms(ListOfChars, ListOfAtoms),
-    phrase(token(Tokens), ListOfAtoms),
+    phrase(lexer(Tokens, pos(1,1), pos(L, C)), ListOfAtoms),
     close(Stream).
 
 lowercase(Char) --> [Char], { char_type(Char, lower) }.
@@ -25,9 +25,10 @@ alphanum_char(Char) --> digit(Char).
 digit(D) --> [D], { char_type(D, digit) }.
 
 whitespace --> [' '].
-whitespace --> ['\n'].
 whitespace --> ['\r'].
 whitespace --> ['\t'].
+
+newline --> ['\n'].
 
 comment      --> ['#'], comment_tail.
 comment_tail --> ['\n'], !.
@@ -66,10 +67,23 @@ special(Char) --> [Char], {
     )
 }.
 
+operator(op(Op), N) --> special(OpHead), operator_tail(OpTail, M), {
+    N is M + 1,
+    atomic_list_concat([OpHead | OpTail], Op)
+}.
+operator_tail([OpHead | OpTail], N) --> 
+    special(OpHead), !, operator_tail(OpTail, M), { N is M + 1 }.
+operator_tail([], 1) --> [].
+
+
+lexer(Tokens, pos(L, C), Pos) -->
+    whitespace, !, { NC is C + 1 }, lexer(Tokens, pos(L, NC), Pos).
+lexer(Tokens, pos(L, _), Pos) --> 
+    newline, !, { NL is L + 1 }, lexer(Tokens, pos(NL, 1), Pos).
+lexer([], PosAcc, PosAcc) --> [].
+
 :- op(1200, xfx, user:(==>)).
 % TODO: expand_term/2
-
-
 
 
 
