@@ -74,9 +74,11 @@ zakończony znakiem nowej linii.
 
 <identifikator> ::= 
     \textit{mała litera} <alfanum>, taki, że nie jest <słowo-kluczowe>
+    \alt \textit{mała litera}
 
 <nazwa-typu> ::=
     \textit{wielka litera} <alfanum>
+    \alt \textit{wielka litera}
 
 \end{grammar}
 
@@ -126,11 +128,13 @@ gdzie\\
 
     <alfanum> ::=
         <litera>
+        \alt <cyfra>
         \alt <alfanum> <litera>
         \alt <alfanum> <cyfra>
 
     <ułamek> ::=
         <literał-całkowitoliczbowy> \textbf{.} <literał-całkowitoliczbowy>
+        \alt <literał-całkowitoliczbowy>
     
     <wykładnik> ::=
         \textbf{e} \textbf{-} <literał-całkowitoliczbowy>
