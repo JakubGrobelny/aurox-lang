@@ -1,7 +1,7 @@
 :- [utility].
 :- op(200, xfx, at).
 
-char_codes_to_atoms([], [eof]) :-
+char_codes_to_atoms([], [' ', eof]) :-
     !.
 char_codes_to_atoms([Char | Chars], [Atom | Atoms]) :-
     char_code(Atom, Char),
@@ -59,17 +59,32 @@ identifier(id(Id), Len) --> lowercase(Char), alphanum(Tail, TLen), {
     atomic_list_concat([Char | Tail], Id)
 }.
 
-digit_seq([Digit | DTail], Len) --> digit(Digit), digit_seq_tail(DTail, Len).
-digit_seq_tail([Digit | DTail], Len) --> 
-    digit(Digit), !, digit_seq_tail(DTail, TLen), { Len is TLen }.
-digit_seq_tail([], 0) --> [].
+signed_digit_seq(['-', D | Digits], Len) --> 
+    ['-'], !, digit(D), digit_seq_tail(Digits, TLen), {
+        Len is 2 + TLen
+    }.
+signed_digit_seq([D | Digits], Len) -->
+    digit(D), digit_seq_tail(Digits, TLen), {
+        Len is 1 + TLen
+    }.
 
-integer_literal(int(Int), Len) --> digit_seq(Atoms, Len), {
-    atomic_list_concat(Atoms, IntAtom),
-    atom_number(IntAtom, Int)
-}.
-% TODO: merge integer_literal with float_literal to avoid reading the initial
-%       sequence twice
+exponent([E | Tail], Len) --> 
+    [E], { member(E, [e, 'E']) }, !, signed_digit_seq(Tail, TLen), {
+        Len is 1 + TLen
+    }.
+exponent([], 0) --> [].
+
+fraction_tail(['.' | Tail], Len) --> 
+    ['.'], !, digit(D), digit_seq_tail(DTail, DLen), exponent(E, ELen), {
+        append([D | DTail], E, Tail),
+        Len is 2 + DLen + ELen
+    }.
+fraction_tail(E, Len) --> exponent(E, Len), !.
+fraction_tail([], 0) --> [].
+
+digit_seq_tail([Digit | DTail], Len) --> 
+    digit(Digit), !, digit_seq_tail(DTail, TLen), { Len is TLen + 1 }.
+digit_seq_tail([], 0) --> [].
 
 special(Char) --> [Char], {
     member(Char, ['-', '+', '*', '/', '=', ':', '>', '<', 
@@ -77,7 +92,7 @@ special(Char) --> [Char], {
     )
 }.
 
-wrap_if_keyword(Atom, keyword(Atom)) :-
+classify_token(Atom, keyword(Atom)) :-
     member(
         Atom,
         [
@@ -89,7 +104,16 @@ wrap_if_keyword(Atom, keyword(Atom)) :-
         ]
     ),
     !.
-wrap_if_keyword(Atom, id(Atom)).
+classify_token(Atom, id(Atom)).
+
+classify_number(Digits, [], int(N)) :-
+    atomic_list_concat(Digits, NumAtom),
+    atom_number(NumAtom, N),
+    !.
+classify_number(Digits, Fractional, float(X)) :-
+    append(Digits, Fractional, Number),
+    atomic_list_concat(Number, NumAtom),
+    atom_number(NumAtom, X).
 
 continuous_sequence([]) --> [eof], !.
 continuous_sequence([]) --> whitespace, !.
@@ -122,8 +146,13 @@ lexer([Token at pos(L, C) | Tokens], pos(L, C)) -->
     lowercase(Letter), !, alphanum(Tail, Len), { NC is C + Len + 1 }, 
     lexer(Tokens, pos(L, NC)), {
         atomic_list_concat([Letter | Tail], Atom),
-        wrap_if_keyword(Atom, Token)
+        classify_token(Atom, Token)
     }.
+lexer([Num at pos(L, C) | Tokens], pos(L, C)) -->
+    digit(D), !, digit_seq_tail(Digits, Len), fraction_tail(FTail, FLen), {
+        NC is C + Len + FLen + 1,
+        classify_number([D | Digits], FTail, Num)
+    }, lexer(Tokens, pos(L, NC)).
 lexer([], Pos), [error(Err) at Pos] --> [X], continuous_sequence(Characters), {
     atomic_list_concat([X | Characters], Err)
 }.
