@@ -1,16 +1,26 @@
-char_codes_to_atoms([], []) :-
+:- [utility].
+:- op(200, xfx, user:(at)).
+
+char_codes_to_atoms([], [eof]) :-
     !.
 char_codes_to_atoms([Char | Chars], [Atom | Atoms]) :-
     char_code(Atom, Char),
     char_codes_to_atoms(Chars, Atoms).
 
-tokenize_file(FileName, Tokens, pos(L, C)) :-
+handle_failure([], _) :-
+    !.
+handle_failure([error(Error) at Pos | _], FileName) :-
+    print_error(Pos, FileName, 'invalid token "~w"', [Error]),
+    halt.
+
+tokenize_file(FileName, Tokens) :-
     open(FileName, read, Stream),
     read_string(Stream, "", "", _, String),
+    close(Stream),
     string_to_list(String, ListOfChars),
     char_codes_to_atoms(ListOfChars, ListOfAtoms),
-    phrase(lexer(Tokens, pos(1,1), pos(L, C)), ListOfAtoms),
-    close(Stream).
+    phrase(lexer(Tokens, pos(1,1)), ListOfAtoms, Rest),
+    handle_failure(Rest, FileName).
 
 lowercase(Char) --> [Char], { char_type(Char, lower) }.
 
@@ -30,7 +40,7 @@ whitespace --> ['\t'].
 
 newline --> ['\n'].
 
-comment      --> ['#'], comment_tail.
+comment_tail, [eof] --> [eof], !.
 comment_tail --> ['\n'], !.
 comment_tail --> [_], comment_tail.
 
@@ -67,20 +77,36 @@ special(Char) --> [Char], {
     )
 }.
 
-operator(op(Op), N) --> special(OpHead), operator_tail(OpTail, M), {
-    N is M + 1,
-    atomic_list_concat([OpHead | OpTail], Op)
-}.
+continuous_sequence([]) --> [eof], !.
+continuous_sequence([]) --> whitespace, !.
+continuous_sequence([]) --> newline, !.
+continuous_sequence([X | Xs]) --> [X], !, continuous_sequence(Xs).
+continuous_sequence([]) --> [].
+
 operator_tail([OpHead | OpTail], N) --> 
     special(OpHead), !, operator_tail(OpTail, M), { N is M + 1 }.
 operator_tail([], 1) --> [].
 
-
-lexer(Tokens, pos(L, C), Pos) -->
-    whitespace, !, { NC is C + 1 }, lexer(Tokens, pos(L, NC), Pos).
-lexer(Tokens, pos(L, _), Pos) --> 
-    newline, !, { NL is L + 1 }, lexer(Tokens, pos(NL, 1), Pos).
-lexer([], PosAcc, PosAcc) --> [].
+lexer([], _) --> [eof], !.
+lexer(Tokens, pos(L, C)) -->
+    whitespace, !, { NC is C + 1 }, lexer(Tokens, pos(L, NC)).
+lexer(Tokens, pos(L, _)) --> 
+    newline, !, { NL is L + 1 }, lexer(Tokens, pos(NL, 1)).
+lexer(Tokens, pos(L, _)) -->
+    ['#'], !, comment_tail, { NL is L + 1 }, lexer(Tokens, pos(NL, 1)).
+lexer([op(Op) at pos(L, C) | Tokens], pos(L, C)) --> 
+    special(OpHead), !, operator_tail(OpTail, Len), 
+    { NC is C + Len }, lexer(Tokens, pos(L, NC)), {
+        atomic_list_concat([OpHead | OpTail], Op)
+    }.
+lexer([tid(TId) at pos(L, C) | Tokens], pos(L, C)) -->
+    uppercase(Letter), !, alphanum(Tail, Len), { NC is C + Len + 1 },
+    lexer(Tokens, pos(L, NC)), {
+        atomic_list_concat([Letter | Tail], TId)
+    }.
+lexer([], Pos), [error(Err) at Pos] --> [X], continuous_sequence(Characters), {
+    atomic_list_concat([X | Characters], Err)
+}.
 
 :- op(1200, xfx, user:(==>)).
 % TODO: expand_term/2
