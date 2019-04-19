@@ -7,11 +7,12 @@ char_codes_to_atoms([Char | Chars], [Atom | Atoms]) :-
     char_code(Atom, Char),
     char_codes_to_atoms(Chars, Atoms).
 
-handle_failure([], _) :-
-    !.
 handle_failure([error(Error) at Pos | _], FileName) :-
+    !,
     print_error(Pos, FileName, 'invalid token "~w"', [Error]),
     halt.
+handle_failure(_, _).
+
 
 tokenize_file(FileName, Tokens) :-
     open(FileName, read, Stream),
@@ -29,6 +30,7 @@ uppercase(Char) --> [Char], { char_type(Char, upper) }.
 letter(Char) --> lowercase(Char).
 letter(Char) --> uppercase(Char).
 
+alphanum_char('_') --> ['_'].
 alphanum_char(Char) --> letter(Char).
 alphanum_char(Char) --> digit(Char).
 
@@ -126,7 +128,8 @@ classify_token(Atom, keyword(Atom)) :-
             then, match, else, 
             with, type, of, 
             where, true, false, 
-            import, fun, define
+            import, fun, define,
+            '_'
         ]
     ),
     !.
@@ -195,6 +198,12 @@ operator_tail([OpHead | OpTail], N) -->
     { N is M + 1 }.
 operator_tail([], 0) --> [].
 
+delimiter('[') --> ['['].
+delimiter(']') --> [']'].
+delimiter('(') --> ['('].
+delimiter(')') --> [')'].
+delimiter(',') --> [','].
+
 lexer([], _) --> [eof], !.
 lexer(Tokens, pos(L, C)) -->
     whitespace, 
@@ -206,6 +215,11 @@ lexer(Tokens, pos(L, _)) -->
     !, 
     { NL is L + 1 }, 
     lexer(Tokens, pos(NL, 1)).
+lexer([Delimiter at pos(L, C) | Tokens], pos(L, C)) -->
+    delimiter(Delimiter),
+    !,
+    { NC is C + 1 },
+    lexer(Tokens, pos(L, NC)).
 lexer(Tokens, pos(L, _)) -->
     ['#'], 
     !, 
@@ -257,6 +271,7 @@ lexer([], Pos), [error(Err) at Pos] -->
     [X], 
     continuous_sequence(Characters), 
     { atomic_list_concat([X | Characters], Err) }.
+% lexer([], _) --> [], !. % for repl
 
 % TODO: term_expansion
 % :- op(1200,xfx,==>).

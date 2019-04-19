@@ -1,8 +1,8 @@
 # comment 
 
 import
-    some_file.ax
-    another_file.ax    
+    "some_file.ax"
+    "another_file.ax"
 end
 
 type Tree of a where
