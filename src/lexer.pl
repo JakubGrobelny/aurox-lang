@@ -7,11 +7,12 @@ char_codes_to_atoms([Char | Chars], [Atom | Atoms]) :-
     char_code(Atom, Char),
     char_codes_to_atoms(Chars, Atoms).
 
-handle_failure([error(Error) at Pos | _], FileName) :-
+% TODO: use exceptions for errors instead of this
+handle_lexing_failure([error(Error) at Pos | _], FileName) :-
     !,
     print_error(Pos, FileName, 'invalid token "~w"', [Error]),
     halt.
-handle_failure(_, _).
+handle_lexing_failure(_, _).
 
 
 tokenize_file(FileName, Tokens) :-
@@ -21,7 +22,7 @@ tokenize_file(FileName, Tokens) :-
     string_to_list(String, ListOfChars),
     char_codes_to_atoms(ListOfChars, ListOfAtoms),
     phrase(lexer(Tokens, pos(1,1)), ListOfAtoms, Rest),
-    handle_failure(Rest, FileName).
+    handle_lexing_failure(Rest, FileName).
 
 lowercase(Char) --> [Char], { char_type(Char, lower) }.
 
@@ -272,16 +273,3 @@ lexer([], Pos), [error(Err) at Pos] -->
     continuous_sequence(Characters), 
     { atomic_list_concat([X | Characters], Err) }.
 % lexer([], _) --> [], !. % for repl
-
-% TODO: term_expansion
-% :- op(1200,xfx,==>).
-% term_expansion((Rule ==> Lhs, Op, Rhs),
-%     [(addition --> addend, addition__),
-%      (addition__ --> ['+'], !, addend, addition__),
-%      (addition__ --> [])
-% ]).
-
-
-
-
-

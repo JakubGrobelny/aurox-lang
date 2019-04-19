@@ -9,17 +9,23 @@ repl(PrevTokens) :-
     repl(Leftovers).
 
 % TODO: add parsing
-parse_stdin(Prev, Tokens, Leftovers) :-
+parse_stdin(Prev, AST, Leftovers) :-
     read_line_to_codes(user_input, Line),
     char_codes_to_atoms(Line, Atoms),
     append(Prev, Atoms, Total),
     append_eof(Total, AtomsEof),
     phrase(lexer(Tokens, pos(1,1)), AtomsEof, Leftovers),
-    handle_failure(Leftovers, stdin).
+    handle_lexing_failure(Leftovers, stdin),
+    catch(
+        phrase(parser(AST), Tokens),
+        Error at Pos,
+        handle_parsing_error(Error, stdin, Pos)
+    ).
+
 
 % TODO: implement
 eval(Xs) :- 
-    write(Xs).
+    writeln(Xs).
 
 append_eof([], [' ', eof]) :-
     !.
