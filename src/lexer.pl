@@ -1,19 +1,11 @@
 :- [utility].
 :- op(200, xfx, at).
 
-char_codes_to_atoms([], [' ', eof]) :-
+char_codes_to_atoms([], []) :-
     !.
 char_codes_to_atoms([Char | Chars], [Atom | Atoms]) :-
     char_code(Atom, Char),
     char_codes_to_atoms(Chars, Atoms).
-
-% TODO: use exceptions for errors instead of this
-handle_lexing_failure([error(Error) at Pos | _], FileName) :-
-    !,
-    print_error(Pos, FileName, 'invalid token "~w"', [Error]),
-    halt.
-handle_lexing_failure(_, _).
-
 
 tokenize_file(FileName, Tokens) :-
     open(FileName, read, Stream),
@@ -21,8 +13,11 @@ tokenize_file(FileName, Tokens) :-
     close(Stream),
     string_to_list(String, ListOfChars),
     char_codes_to_atoms(ListOfChars, ListOfAtoms),
-    phrase(lexer(Tokens, pos(1,1)), ListOfAtoms, Rest),
-    handle_lexing_failure(Rest, FileName).
+    catch(
+        phrase(lexer(Tokens, pos(1,1)), ListOfAtoms),
+        error(Format, Args) at Pos,
+        print_error(Pos, FileName, Format, Args)
+    ).
 
 lowercase(Char) --> [Char], { char_type(Char, lower) }.
 
@@ -41,15 +36,41 @@ string_delimiter --> ['"'].
 
 char_delimiter --> ['\''].
 
+string_terminator(_, _) --> string_delimiter, !.
+string_terminator(Str, Pos) -->
+    { throw(error('Nonterminated string ~w', [Str]) at Pos) }.
+
+char_literal(_, _, Start) -->
+    ['\''],
+    !,
+    { throw(error('Empty character literal', []) at Start) }.
+char_literal(Char, Len, _) -->
+    char(Char, Len),
+    char_delimiter,
+    !.
+char_literal(_, _, Start) -->
+    char_sequence(Seq, Len),
+    char_error(Seq, Start, Len).
+
+char_error(Seq, Pos, _) -->
+    char_delimiter,
+    !,
+    { 
+        atomic_list_concat(Seq, Char),
+        throw(error('Character literal ~w is too long', [Char]) at Pos) 
+    }.
+char_error(Char, Pos, _) -->
+    { throw(error('Nonterminated character ~w', [Char]) at Pos) }.
+
 whitespace --> [' '].
 whitespace --> ['\r'].
 whitespace --> ['\t'].
 
 newline --> ['\n'].
 
-comment_tail, [eof] --> [eof], !.
 comment_tail --> ['\n'], !.
-comment_tail --> [_], comment_tail.
+comment_tail --> [_], !, comment_tail.
+comment_tail --> [].
 
 alphanum([Char | Chars], Len) --> 
     alphanum_char(Char), 
@@ -59,22 +80,6 @@ alphanum([Char | Chars], Len) -->
         Len is L0 + 1 
     }.
 alphanum([],  0) --> [].
-
-type_name(tid(Id), Len) --> 
-    uppercase(Char), 
-    alphanum(Tail, TLen), 
-    {
-        Len is TLen,
-        atomic_list_concat([Char | Tail], Id)
-    }.
-
-identifier(id(Id), Len) --> 
-    lowercase(Char), 
-    alphanum(Tail, TLen), 
-    {
-        Len is 1 + TLen,
-        atomic_list_concat([Char | Tail], Id)
-    }.
 
 signed_digit_seq(['-', D | Digits], Len) --> 
     ['-'], 
@@ -115,11 +120,13 @@ digit_seq_tail([Digit | DTail], Len) -->
     { Len is TLen + 1 }.
 digit_seq_tail([], 0) --> [].
 
-special(Char) --> [Char], {
-    member(Char, ['-', '+', '*', '/', '=', ':', '>', '<', 
-                  '!', '@', '%', '^', '~', '&', '$', '|']
-    )
-}.
+special(Char) --> 
+    [Char], 
+    {
+        member(Char, ['-', '+', '*', '/', '=', ':', '>', '<', 
+                    '!', '@', '%', '^', '~', '&', '$', '|']
+        )
+    }.
 
 classify_token(Atom, keyword(Atom)) :-
     member(
@@ -145,8 +152,6 @@ classify_number(Digits, Fractional, float(X)) :-
     atomic_list_concat(Number, NumAtom),
     atom_number(NumAtom, X).
 
-% TODO: write text_sequence/4 
-
 char('\\', 2) --> ['\\', '\\'], !.
 char('\n', 2) --> ['\\', 'n'], !.
 char('\b', 2) --> ['\\', 'b'], !.
@@ -155,12 +160,12 @@ char('\a', 2) --> ['\\', 'a'], !.
 char('\r', 2) --> ['\\', 'r'], !.
 char('\t', 2) --> ['\\', 't'], !.
 char('\0', 2) --> ['\\', '0'], !.
-char('"', 2) --> ['\\', '"'], !.
+char('"', 2)  --> ['\\', '"'], !.
 char('\'', 2) --> ['\\', '\''], !.
 char('', 0)   --> ['\\'], !, { fail }.
-char('', 0)   --> [eof],  !, { fail }.
 char('', 0)   --> ['\''], !, { fail }.
 char('', 0)   --> ['"'],  !, { fail }.
+char('', 0)   --> newline, !, { fail }.
 char(Char, 1) --> [Char].
 
 char_sequence([Char | Chars], N) -->
@@ -186,7 +191,6 @@ text_literal(string(Str), Len) -->
         atomic_list_concat(StrList, Str)
     }.
 
-continuous_sequence([]) --> [eof], !.
 continuous_sequence([]) --> whitespace, !.
 continuous_sequence([]) --> newline, !.
 continuous_sequence([X | Xs]) --> [X], !, continuous_sequence(Xs).
@@ -205,7 +209,6 @@ delimiter('(') --> ['('].
 delimiter(')') --> [')'].
 delimiter(',') --> [','].
 
-lexer([], _) --> [eof], !.
 lexer(Tokens, pos(L, C)) -->
     whitespace, 
     !, 
@@ -263,13 +266,30 @@ lexer([Num at pos(L, C) | Tokens], pos(L, C)) -->
         classify_number([D | Digits], FTail, Num)
     }, 
     lexer(Tokens, pos(L, NC)).
-lexer([Text at pos(L, C) | Tokens], pos(L, C)) -->
-    text_literal(Text, Len), 
-    !, 
-    { NC is C + Len },
+lexer([char(Char) at pos(L, C) | Tokens], pos(L, C)) -->
+    char_delimiter,
+    !,
+    char_literal(Char, Len, pos(L, C)),
+    { 
+        NC is C + Len + 2 
+    },
     lexer(Tokens, pos(L, NC)).
-lexer([], Pos), [error(Err) at Pos] --> 
-    [X], 
-    continuous_sequence(Characters), 
-    { atomic_list_concat([X | Characters], Err) }.
-% lexer([], _) --> [], !. % for repl
+lexer([string(Str) at pos(L, C) | Tokens], pos(L, C)) -->
+    string_delimiter,
+    !,
+    char_sequence(StrChars, Len),
+    { 
+        NC is C + Len + 2,
+        atomic_list_concat(StrChars, Str)
+    },
+    string_terminator(Str, pos(L, C)),
+    lexer(Tokens, pos(L, NC)).
+lexer(_, Pos) -->
+    [X],
+    !,
+    continuous_sequence(Characters),
+    { 
+        atomic_list_concat([X | Characters], Err),
+        throw(error('invalid atom ~w', [Err]) at Pos)
+    }.
+lexer([], _) --> [].
