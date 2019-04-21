@@ -24,3 +24,7 @@ put_nth([X | Xs], N, Elem, [X | Ys]) :-
 put_nth([], _, _, _) :-
     throw(out_of_bounds_error).
 
+set_nth(Xs, N, Val, Ys) :-
+    get_nth(Xs, N, _, Zs),
+    put_nth(Zs, N, Val, Ys).
+

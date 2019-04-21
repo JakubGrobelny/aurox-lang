@@ -35,6 +35,8 @@ operator_definition(_, PrevOperators, NewOperators) -->
         )
     },
     !.
+operator_definition(Pos, _, _) -->
+    { throw(error('Syntax error in operator definition', []) at Pos) }.
 
 valid_priority(integer(N), _) :-
     member(N, [0,1,2,3,4,5]),
@@ -81,7 +83,3 @@ update_operators(Op, Priority, Assoc, ops(Ops), ops(NewOps)) :-
     select(Op, NewOpsWithPriority, OpsWithPriority),
     put_nth(RestPriority, Priority, NewOpsWithPriority, NewOpsWithAssoc),
     put_nth(RestAssocs, AssocNum, NewOpsWithAssoc, NewOps).
-
-
-
-
