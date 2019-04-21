@@ -2,6 +2,7 @@ import {
     "file1.ax"
     "file2.ax"
     "file3.ax"
+    IO
 }
 
 defop { $ 0 right }
@@ -58,3 +59,21 @@ let n := read_int () in {
         case _ => n
     })
 }
+
+let odd :=
+    { |n| match n {
+        case 0 => false
+        case 1 => true
+        case _ => not $ even $ n - 1
+    }}
+and even :=
+    { |n| match n {
+        case 0 => true
+        case 1 => false
+        case _ => not $ odd $ n - 1
+    }}
+in write $ odd 42
+
+if odd 10
+    then write "true"
+    else write "false"

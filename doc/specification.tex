@@ -161,6 +161,7 @@ gdzie\\
     \alt <define-definicja>
     \alt <defun-definicja>
     \alt <type-definicja>
+    \alt <import>
 
 <literał-funkcyjny> ::=
     \textbf{\{} \texttt{|} <lista-parametrów> \texttt{|} <wyrażenie> \textbf{\}}
@@ -237,8 +238,12 @@ gdzie\\
     \textbf{import} \textbf{\{} <pliki-do-importowania> \textbf{\}}
 
 <pliki-do-importowania> ::=
+    <nazwa-pliku>
+    \alt <nazwa-pliku> <pliki-do-importowania>
+
+<nazwa-pliku> ::=
     <literał-napisowy>
-    \alt <literał-napisowy> <pliki-do-importowania>
+    \alt <nazwa-typu>
 
 <lista> ::=
     \textbf{[\,]}
