@@ -312,10 +312,14 @@ gdzie\\
     \alt \textbf{and} <definicja> <and-definicje>
 
 <wyrażenie> ::=
-    <krotka>
+    <sekwencja-wyrażeń>
     \alt <dopasowanie-do-wzorca>
     \alt <let-definicja>
     \alt <wyrażenie-warunkowe>
+
+<sekwencja-wyrażeń> ::=
+    <krotka>
+    \alt <krotka> \textbf{;} <sekwencja-wyrażeń>
 
 <krotka> ::=
     <wn>
@@ -444,6 +448,16 @@ gdzie\\
 <aplikacja> ::=
     <aplikacja> <wyrażenie-atomowe>
     \alt <wyrażenie-atomowe>
+
+<.*_op> ::= 
+    <operator>
+    \footnote{
+        Operatory i ich priorytety oraz 
+        łączność są definiowane wewnątrz programów
+        i nie istnieje dla nich gramatyka bezkontekstowa.
+    }
+
+
 
 \end{grammar}
 
