@@ -55,6 +55,10 @@ zakończony znakiem nowej linii.
     <ułamek>
     \alt <ułamek> <wykładnik>
 
+<literał-boolowski> ::=
+    \textbf{true}
+    | \textbf{false}
+
 <słowo-kluczowe> ::=
     \textbf{let}
     | \textbf{and}
@@ -67,9 +71,7 @@ zakończony znakiem nowej linii.
     | \textbf{type}
     | \textbf{of}
     | \textbf{where}
-    \alt \textbf{true}
-    | \textbf{false}
-    | \textbf{import}
+    \alt \textbf{import}
     | \textbf{fun}
     | \textbf{define}
 
@@ -107,42 +109,42 @@ gdzie\\
     | \textbf{\texttt{\^}}
     | \textbf{\texttt{\~}}
 
-    <znak> ::= 
-        \textit{dowolny znak Unicode oprócz 
-            \textbf{"\\"}, \textbf{"\""}, \textbf{"\'"}}
-        \alt \textbf{"\\"n}\,
-        | \textbf{"\\"b}\,
-        | \textbf{"\\"f}\,
-        | \textbf{"\\"a}\,
-        | \textbf{"\\"r}\,
-        | \textbf{"\\"t}\,
-        | \textbf{"\\0"}\,
-        | \textbf{"\\"v}\,
-        | \textbf{"\\\\"}\,
-        | \textbf{"\\"'}\,
-        | \textbf{"\\\""}\,
+<znak> ::= 
+    \textit{dowolny znak Unicode oprócz 
+        \textbf{"\\"}, \textbf{"\""}, \textbf{"\'"}}
+    \alt \textbf{"\\"n}\,
+    | \textbf{"\\"b}\,
+    | \textbf{"\\"f}\,
+    | \textbf{"\\"a}\,
+    | \textbf{"\\"r}\,
+    | \textbf{"\\"t}\,
+    | \textbf{"\\0"}\,
+    | \textbf{"\\"v}\,
+    | \textbf{"\\\\"}\,
+    | \textbf{"\\"'}\,
+    | \textbf{"\\\""}\,
 
-    <ciąg-znaków> ::=
-        <znak>
-        \alt <ciąg-znaków> <znak>
-    
-    <litera> ::=
-        \textit{mała litera}
-        \alt \textit{wielka litera}
+<ciąg-znaków> ::=
+    <znak>
+    \alt <ciąg-znaków> <znak>
 
-    <alfanum> ::=
-        <litera>
-        \alt <cyfra>
-        \alt <alfanum> <litera>
-        \alt <alfanum> <cyfra>
+<litera> ::=
+    \textit{mała litera}
+    \alt \textit{wielka litera}
 
-    <ułamek> ::=
-        <literał-całkowitoliczbowy> \textbf{.} <literał-całkowitoliczbowy>
-        \alt <literał-całkowitoliczbowy>
-    
-    <wykładnik> ::=
-        \textbf{e} \textbf{-} <literał-całkowitoliczbowy>
-        \alt \textbf{e} <literał-całkowitoliczbowy>
+<alfanum> ::=
+    <litera>
+    \alt <cyfra>
+    \alt <alfanum> <litera>
+    \alt <alfanum> <cyfra>
+
+<ułamek> ::=
+    <literał-całkowitoliczbowy> \textbf{.} <literał-całkowitoliczbowy>
+    \alt <literał-całkowitoliczbowy>
+
+<wykładnik> ::=
+    \textbf{e} \textbf{-} <literał-całkowitoliczbowy>
+    \alt \textbf{e} <literał-całkowitoliczbowy>
 
 \end{grammar}
 
@@ -150,8 +152,194 @@ gdzie\\
 
 \begin{grammar}
 
+<program> ::=
+    <wyrażenie-lub-definicja>
+    \alt <wyrażenie-lub-definicja> <program>
 
+<wyrażenie-lub-definicja> ::=
+    <wyrażenie>
+    \alt <define-definicja>
+    \alt <defun-definicja>
+    \alt <type-definicja>
 
+<literał-funkcyjny> ::=
+    \textbf{\{} \texttt{|} <lista-parametrów> \texttt{|} <wyrażenie> \textbf{\}}
+
+<lista-parametrów> ::=
+    <identyfikator>
+    \alt \textbf{_}
+    \alt \textbf{_} <lista-parametrów>
+    \alt <identyfikator> <lista-parametrów>
+
+<stała> ::=
+    <literał-całkowitoliczbowy>
+    \alt <literał-zmiennopozycyjny>
+    \alt <literał-napisowy>
+    \alt <literał-znakowy>
+    \alt <literał-funkcyjny>
+    \alt \textbf{(\,)}
+
+<wyrażenie-atomowe> ::=
+    \textbf{(} <wyrażenie> \textbf{)}
+    \alt <identyfikator>
+    \alt <nazwa-typu>
+    \alt <stała>
+
+<wyrażenie-warunkowe> ::=
+    \textbf{if} <wyrażenie>
+    \textbf{then} <wyrażenie>
+    \textbf{else} <wyrażenie>
+
+<dopasowanie-do-wzorca> ::=
+    \textbf{match} <wyrażenie> \textbf{\{}
+    <lista-wzorców> \textbf{\}}
+
+<lista-wzorców> ::= $\epsilon$
+    \alt \textbf{case} <wzorzec> \texttt{=>} <wyrażenie> <lista-wzorców>
+
+<wzorzec> ::=
+    <wzorzec-atomowy>
+    \alt <aplikacja-konstruktora>
+
+<aplikacja-konstruktora> ::=
+    <nazwa-typu> <wzorzec-atomowy>
+    \alt <nazwa-typu>
+
+<wzorzec-atomowy> ::=
+    <stała>
+    \alt <identyfikator>
+    \alt \textbf{(} <krotka-wzorców> \textbf{)}
+    \alt <wzorzec-listowy>
+
+<krotka-wzorców> ::=
+    <wzorzec>
+    \alt <wzorzec> \textbf{,} <krotka-wzorców>
+
+<wzorzec-listowy> ::=
+    \textbf{[\,]}
+    \alt \textbf{[} <krotka-wzorców> \textbf{]}
+    \alt \textbf{[} <krotka-wzorców> \texttt{|} <identyfikator> \textbf{]}
+
+<deklaracja-operatora> ::=
+    \textbf{defop \{} <operator> <priorytet> <łączność> \textbf{\}}
+
+<priorytet> ::=
+    \textbf{0} | \textbf{1} | \textbf{2} | \textbf{3} | \textbf{4} | \textbf{5}
+
+<łączność> ::=
+    \textbf{left}
+    \alt \textbf{right}
+    \alt \textbf{none}
+    \alt \textbf{left_unary}
+    \alt \textbf{right_unary}
+
+<import> ::=
+    \textbf{import} \textbf{\{} <pliki-do-importowania> \textbf{\}}
+
+<pliki-do-importowania> ::=
+    <literał-napisowy>
+    \alt <literał-napisowy> <pliki-do-importowania>
+
+<lista> ::=
+    \textbf{[\,]}
+    \alt \textbf{[} <krotka> \textbf{]}
+    \alt \textbf{[} <krotka> \texttt{|} <wyrażenie> \textbf{]}
+
+<let-definicja> ::=
+    \textbf{let} <definicja> <and-definicje>
+    \textbf{in} \textbf{\{} <wyrażenie> \textbf{\}} 
+
+<definicja> ::=
+    <identyfikator> \textbf{:} <typ> \textbf{=} <wyrażenie>
+
+<define-definicja> ::=
+    \textbf{define} <definicja> \textbf{\{} <wyrażenie> \textbf{\}}
+
+<defun-definicja> ::=
+    \textbf{defun} <identyfikator> <lista-parametrów> \textbf{:} <typ> 
+    \textbf{= \{} <wyrażenie> \textbf{\}}
+
+<type-definicja> ::=
+    \textbf{type} <nazwa-typu> 
+    \textbf{:} <lista-parametrów> <ciało-typu>
+    \alt \textbf{type} <nazwa-typu> <ciało-typu>
+
+<ciało-typu> ::= 
+    \textbf{\{} <lista-konstruktorów> \textbf{\}}
+
+<lista-konstruktorów> ::=
+    $\epsilon$
+    \alt <lista-konstruktorów> <konstruktor>
+
+<konstruktor> ::=
+    <nazwa-typu>
+    \alt <nazwa-typu> \textbf{: \{} <typ> \textbf{\}}
+
+<typ> ::= 
+    <iloczyn-kartezjański>
+    \alt <iloczyn-kartezjański> \texttt{->} <typ>
+
+<iloczyn-kartezjański> ::=
+    <typ-algebraiczny>
+    \alt <typ-algebraiczny> \textbf{,} <iloczyn-kartezjański>
+
+<typ-algebraiczny> ::=
+    <typ-atomowy>
+    \alt <nazwa-typu> <lista-typów-atomowych>
+
+<lista-typów-atomowych> ::=
+    <typ-atomowy>
+    \alt <typ-atomowy> <lista-typów-atomowych>
+
+<typ-atomowy> ::=
+    <identifikator>
+    \alt <nazwa-typu>
+    \alt \textbf{(} <typ> \textbf{)}
+    \alt \textbf{[} <typ> \textbf{]}
+
+<and-definicje> ::=
+    $\epsilon$
+    \alt \textbf{and} <definicja> <and-definicje>
+
+<wyrażenie> ::=
+    <krotka>
+    \alt <dopasowanie-do-wzorca>
+    \alt <let-definicja>
+    \alt <wyrażenie-warunkowe>
+
+<krotka> ::=
+    <w0>
+    \alt <w0> \textbf{,} <krotka>
+
+<w0> ::=
+    <w0l> | <w0r> | <w0n> | <w0ul> | <w0ur>
+    \alt <w1>
+
+<w1> ::=
+    <w1l> | <w1r> | <w1n> | <w1ul> | <w1ur>
+    \alt <w2>
+
+<w2> ::=
+    <w2l> | <w2r> | <w2n> | <w2ul> | <w2ur>
+    \alt <w3>
+
+<w3> ::=
+    <w3l> | <w3r> | <w3n> | <w3ul> | <w3ur>
+    \alt <w4>
+
+<w4> ::=
+    <w4l> | <w4r> | <w4n> | <w4ul> | <w4ur>
+    \alt <w5>
+
+<w5> ::=
+    <w5l> | <w5r> | <w5n> | <w5ul> | <w5ur>
+    \alt <aplikacja>
+
+<aplikacja> ::=
+    <aplikacja> <wyrażenie-atomowe>
+    \alt <wyrażenie-atomowe>
+
+% TODO: opis wszystkich tych w1..w5
 
 \end{grammar}
 

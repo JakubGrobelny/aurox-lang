@@ -23,11 +23,12 @@ lowercase(Char) --> [Char], { char_type(Char, lower) }.
 
 uppercase(Char) --> [Char], { char_type(Char, upper) }.
 
-letter(Char) --> lowercase(Char).
+letter(Char) --> lowercase(Char), !.
 letter(Char) --> uppercase(Char).
 
-alphanum_char('_') --> ['_'].
-alphanum_char(Char) --> letter(Char).
+alphanum_char('?') --> ['?'], !.
+alphanum_char('_') --> ['_'], !.
+alphanum_char(Char) --> letter(Char), !.
 alphanum_char(Char) --> digit(Char).
 
 digit(D) --> [D], { char_type(D, digit) }.
@@ -62,8 +63,8 @@ char_error(Seq, Pos, _) -->
 char_error(Char, Pos, _) -->
     { throw(error('Nonterminated character ~w', [Char]) at Pos) }.
 
-whitespace --> [' '].
-whitespace --> ['\r'].
+whitespace --> [' '],  !.
+whitespace --> ['\r'], !.
 whitespace --> ['\t'].
 
 newline --> ['\n'].
@@ -123,8 +124,10 @@ digit_seq_tail([], 0) --> [].
 special(Char) --> 
     [Char], 
     {
-        member(Char, ['-', '+', '*', '/', '=', ':', '>', '<', 
-                    '!', '@', '%', '^', '~', '&', '$', '|']
+        member(
+            Char, 
+            ['-', '+', '*', '/', '=', '.', '>', '<',
+             '!', '@', '%', '^', '~', '&', '$', '|']
         )
     }.
 
@@ -134,12 +137,14 @@ classify_token(Atom, keyword(Atom)) :-
         [
             let, and, in, if, 
             then, match, else, 
-            with, type, of, 
-            where, true, false, 
-            import, fun, define,
-            '_'
+            with, type, import, 
+            define, defun, '_', defop
         ]
     ),
+    !.
+classify_token(true, bool(true)) :-
+    !.
+classify_token(false, bool(false)) :-
     !.
 classify_token(Atom, id(Atom)).
 
@@ -203,11 +208,15 @@ operator_tail([OpHead | OpTail], N) -->
     { N is M + 1 }.
 operator_tail([], 0) --> [].
 
-delimiter('[') --> ['['].
-delimiter(']') --> [']'].
-delimiter('(') --> ['('].
-delimiter(')') --> [')'].
-delimiter(',') --> [','].
+delimiter('[') --> ['['], !.
+delimiter(']') --> [']'], !.
+delimiter('{') --> ['{'], !.
+delimiter('}') --> ['}'], !.
+delimiter('(') --> ['('], !.
+delimiter(')') --> [')'], !.
+delimiter(',') --> [','], !.
+delimiter(':') --> [':'], !.
+delimiter(';') --> [';'].
 
 lexer(Tokens, pos(L, C)) -->
     whitespace, 
@@ -270,10 +279,10 @@ lexer([char(Char) at pos(L, C) | Tokens], pos(L, C)) -->
     char_delimiter,
     !,
     char_literal(Char, Len, pos(L, C)),
-    { 
+    {
         NC is C + Len + 2 
     },
-    lexer(Tokens, pos(L, NC)).
+    lexer(Tokens, pos(L, NC)).  
 lexer([string(Str) at pos(L, C) | Tokens], pos(L, C)) -->
     string_delimiter,
     !,
@@ -290,6 +299,6 @@ lexer(_, Pos) -->
     continuous_sequence(Characters),
     { 
         atomic_list_concat([X | Characters], Err),
-        throw(error('invalid atom ~w', [Err]) at Pos)
+        throw(error('invalid token ~w', [Err]) at Pos)
     }.
 lexer([], _) --> [].
