@@ -256,8 +256,12 @@ gdzie\\
     \textbf{define} <definicja> \textbf{\{} <wyrażenie> \textbf{\}}
 
 <defun-definicja> ::=
-    \textbf{defun} <identyfikator> <lista-parametrów> \textbf{:} <typ> 
+    \textbf{defun} <nazwa-funkcji> <lista-parametrów> \textbf{:} <typ> 
     \textbf{= \{} <wyrażenie> \textbf{\}}
+
+<nazwa-funkcji> ::=
+    <identifikator>
+    \alt \textbf{(} <operator> \textbf{)}
 
 <type-definicja> ::=
     \textbf{type} <nazwa-typu> 
