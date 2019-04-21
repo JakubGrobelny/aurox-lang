@@ -1,8 +1,8 @@
 import {
+    IO
     "file1.ax"
     "file2.ax"
     "file3.ax"
-    IO
 }
 
 defop { $ 0 right }

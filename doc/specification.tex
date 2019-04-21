@@ -182,6 +182,7 @@ gdzie\\
 
 <wyrażenie-atomowe> ::=
     \textbf{(} <wyrażenie> \textbf{)}
+    \textbf{(} <operator> \textbf{)}
     \alt <identyfikator>
     \alt <nazwa-typu>
     \alt <stała>
@@ -283,14 +284,14 @@ gdzie\\
 <konstruktor> ::=
     <nazwa-typu>
     \alt <nazwa-typu> \textbf{: \{} <typ> \textbf{\}}
+    
+<typ> ::=
+    <funkcja>
+    \alt <funkcja> \textbf{,} <typ>
 
-<typ> ::= 
-    <iloczyn-kartezjański>
-    \alt <iloczyn-kartezjański> \texttt{->} <typ>
-
-<iloczyn-kartezjański> ::=
+<funkcja> ::= 
     <typ-algebraiczny>
-    \alt <typ-algebraiczny> \textbf{,} <iloczyn-kartezjański>
+    \alt <typ-algebraiczny> \texttt{->} <funkcja>
 
 <typ-algebraiczny> ::=
     <typ-atomowy>
@@ -317,38 +318,132 @@ gdzie\\
     \alt <wyrażenie-warunkowe>
 
 <krotka> ::=
-    <w0>
-    \alt <w0> \textbf{,} <krotka>
+    <wn>
+    \alt <wn> \textbf{,} <krotka>
 
-<w0> ::=
-    <w0l> | <w0r> | <w0n> | <w0ul> | <w0ur>
-    \alt <w1>
+<w0n> ::=
+    <w0r>
+    \alt <w0r> <w0n_op> <w0r>
 
-<w1> ::=
-    <w1l> | <w1r> | <w1n> | <w1ul> | <w1ur>
-    \alt <w2>
+<w0r> ::=
+    <w0l>
+    \alt <w0l> <w0r_op> <w0r>
 
-<w2> ::=
-    <w2l> | <w2r> | <w2n> | <w2ul> | <w2ur>
-    \alt <w3>
+<w0l> ::=
+    <w0ul>
+    \alt <w0l> <w0l_op> <w0ur>
 
-<w3> ::=
-    <w3l> | <w3r> | <w3n> | <w3ul> | <w3ur>
-    \alt <w4>
+<w0ur> ::=
+    <w0ul>
+    \alt <w0ul> <w0ur_op> 
+    
+<w0ul> ::=
+    <w1n>
+    \alt <w1ul_op> <w1n>
 
-<w4> ::=
-    <w4l> | <w4r> | <w4n> | <w4ul> | <w4ur>
-    \alt <w5>
+<w1n> ::=
+    <w1r>
+    \alt <w1r> <w1n_op> <w1r>
 
-<w5> ::=
-    <w5l> | <w5r> | <w5n> | <w5ul> | <w5ur>
-    \alt <aplikacja>
+<w1r> ::=
+    <w1l>
+    \alt <w1l> <w1r_op> <w1r>
+
+<w1l> ::=
+    <w1ul>
+    \alt <w1l> <w1l_op> <w1ur>
+
+<w1ur> ::=
+    <w1ul>
+    \alt <w1ul> <w1ur_op> 
+    
+<w1ul> ::=
+    <w2n>
+    \alt <w1ul_op> <w2n>
+
+<w2n> ::=
+    <w2r>
+    \alt <w2r> <w2n_op> <w2r>
+
+<w2r> ::=
+    <w2l>
+    \alt <w2l> <w2r_op> <w2r>
+
+<w2l> ::=
+    <w2ul>
+    \alt <w2l> <w2l_op> <w2ur>
+
+<w2ur> ::=
+    <w2ul>
+    \alt <w2ul> <w2ur_op> 
+    
+<w2ul> ::=
+    <w3n>
+    \alt <w2ul_op> <w3n>
+
+    <w3n> ::=
+    <w3r>
+    \alt <w3r> <w3n_op> <w3r>
+
+<w3r> ::=
+    <w3l>
+    \alt <w3l> <w3r_op> <w3r>
+
+<w3l> ::=
+    <w3ul>
+    \alt <w3l> <w3l_op> <w3ur>
+
+<w3ur> ::=
+    <w3ul>
+    \alt <w3ul> <w3ur_op> 
+    
+<w3ul> ::=
+    <w4n>
+    \alt <w3ul_op> <w4n>
+
+<w4n> ::=
+    <w4r>
+    \alt <w4r> <w4n_op> <w4r>
+
+<w4r> ::=
+    <w4l>
+    \alt <w4l> <w4r_op> <w4r>
+
+<w4l> ::=
+    <w4ul>
+    \alt <w4l> <w4l_op> <w4ur>
+
+<w4ur> ::=
+    <w4ul>
+    \alt <w4ul> <w4ur_op> 
+    
+<w4ul> ::=
+    <w5n>
+    \alt <w4ul_op> <w5n>
+
+<w5n> ::=
+    <w5r>
+    \alt <w5r> <w5n_op> <w5r>
+
+<w5r> ::=
+    <w5l>
+    \alt <w5l> <w5r_op> <w5r>
+
+<w5l> ::=
+    <w5ul>
+    \alt <w5l> <w5l_op> <w5ur>
+
+<w5ur> ::=
+    <w5ul>
+    \alt <w5ul> <w5ur_op>
+    
+<w5ul> ::=
+    <aplikacja>
+    \alt <w5ul_op> <aplikacja>
 
 <aplikacja> ::=
     <aplikacja> <wyrażenie-atomowe>
     \alt <wyrażenie-atomowe>
-
-% TODO: opis wszystkich tych w1..w5
 
 \end{grammar}
 
