@@ -43,20 +43,20 @@ defexpr(Expr, Operators) -->
     expr(Expr, Operators).
 
 define(define(sig(Name, Type), Val) at Pos, Operators, Pos) -->
-    signature(Name, Type, Pos),
+    signature(Name, Type),
     !,
     curly_bracket(Start, Pos),
     bracketed_expr(Val, Operators, Start).
 define(_, _, Start) -->
     { throw(error('Invalid value signature in definition', []) at Start) }.
 
-signature(Name, Type, _) -->
-    identifier(Name),
+signature(Name, Type) -->
+    [id(Name) at _],
     [':' at _],
     type(Type),
     [operator('=') at _].
 
-bracketed_expr(Expr, Operators, _) -->
+bracketed_expr(Expr, Operators, Start) -->
     expr(Expr, Operators),
     curly_bracket_terminator(Start).
 
@@ -72,7 +72,6 @@ curly_bracket_terminator(_) -->
 curly_bracket_terminator(Start) -->
     { throw(error('Curly bracket not terminated properly', []) at Start) }.
 
-% TODO:
 expr(IfElse, Operators) -->
     [keyword(if) at Start],
     !,
@@ -95,7 +94,7 @@ unit_literal(unit at Pos) -->
     [')' at _].
 
 if_else(_, if(Condition, Consequence, Alternative), Operators) -->
-    parser(Condition, Operators),
+    expr(Condition, Operators),
     if_consequence(Pos, Consequence, Operators),
     if_alternative(Pos, Alternative, Operators),
     !.
@@ -105,7 +104,7 @@ if_else(Pos, _, _) -->
 if_consequence(_, Consequence, Ops) -->
     [keyword(then) at _],
     !,
-    parser(Consequence, Ops).
+    expr(Consequence, Ops).
 if_consequence(Pos, _, _) -->
     { 
         throw(error('Missing "then" in if-then-else expression', []) at Pos) 
@@ -114,7 +113,7 @@ if_consequence(Pos, _, _) -->
 if_alternative(_, Alternative, Ops) -->
     [keyword(else) at _],
     !,
-    parser(Alternative, Ops).
+    expr(Alternative, Ops).
 if_alternative(Pos, _, _) -->
     {
         throw(error('Missing "else" in if-then-else expression', []) at Pos)
@@ -159,6 +158,54 @@ valid_associativity(id(Assoc), Pos) :-
         ErrorMessage
     ),
     throw(error(ErrorMessage, [Assoc]) at Pos).
+
+type(Type) -->
+    function_type(Left at Start),
+    type_tail(Left, Type, Start).
+type_tail(Left, tuple_type(Left, Right) at Start, Start) -->
+    [',' at _],
+    !,
+    type(Right).
+type_tail(Left, Left) --> [].
+
+function_type(Type) -->
+    algebraic_type(Left),
+    function_type_tail(Left, Type).
+function_type_tail(Left, function_type(Left, Right) at Pos) -->
+    [operator('->') at Pos],
+    !,
+    function_type(Right).
+function_type_tail(Left, Left) --> [].
+
+algebraic_type(Atomic) -->
+    atomic_type(Atomic),
+    !.
+algebraic_type(adt(Type, Parameters) at Pos) -->
+    [tid(Type) at Pos],
+    atomic_type_sequence(Parameters).
+
+atomic_type_sequence([Head | Tail]) -->
+    atomic_type(Head),
+    !,
+    atomic_type_sequence(Tail).
+atomic_type_sequence([]) --> [].
+
+atomic_type(param(Id) at Pos) -->
+    [id(Id) at Pos],
+    !.
+atomic_type(type_name(Name) at Pos) -->
+    [tid(Name) at Pos],
+    !.
+atomic_type(list(Type) at Start) -->
+    ['[' at Start],
+    !,
+    type(Type at _),
+    [']' at _].
+atomic_type(Type) -->
+    ['(' at _],
+    !,
+    type(Type),
+    [')' at _].
 
 empty_operator_list(
         ops([[[], [], [], [], [], []],
