@@ -33,7 +33,7 @@ defexpr(Definition, Operators) -->
     !,
     defun(Definition, Operators, Start).
 defexpr(TypeDef, Operators) -->
-    [keyword(import) at Start],
+    [keyword(type) at Start],
     !,
     typedef(TypeDef, Operators, Start).
 defexpr(Import, _) -->
@@ -42,17 +42,75 @@ defexpr(Import, _) -->
 defexpr(Expr, Operators) -->
     expr(Expr, Operators).
 
-define(define(sig(Name, Type), Val) at Pos, Operators, Pos) -->
-    signature(Name, Type),
+defun(defun(Name, Args, Type, Body) at Pos, Operators, Pos) -->
+    argument_sequence([Name | Args]), 
+    !,
+    defun_rest(Type, Body, Pos, Operators).
+defun(_, _, Start) -->
+    { throw(error('Missing name in function definition', []) at Start) }.
+
+defun_rest(Type, Body, Start, Operators) -->
+    [':' at _],
+    type(Type),
+    ['=' at _],
+    !,
+    curly_bracket(BracketStart, Start),
+    expr(Body, Operators),
+    curly_bracket_terminator(BracketStart).
+defun_rest(_, _, Start, _) -->
+    { throw(error('Missing ":=" in function definition', []) at Start) }.
+
+argument(Arg) -->
+    ['(' at _],
+    !,
+    [operator(Arg) at _],
+    [')' at _].
+argument(Arg) -->
+    [id(Arg)].
+
+argument_sequence([Arg | Tail]) -->
+    argument(Arg),
+    argument_sequence_tail(Tail).
+argument_sequence_tail([Arg | Tail]) -->
+    argument(Arg),
+    !,
+    argument_sequence_tail(Tail).
+argument_sequence_tail([]) --> [].
+
+import(import(Files), Start) -->
+    curly_bracket(_, Start),
+    !,
+    files_to_import(Files),
+    curly_bracket_terminator(Start).
+
+files_to_import([File at Pos | Files]) -->
+    [tid(File) at Pos],
+    !,
+    files_to_import(Files).
+files_to_import([File at Pos | Files]) -->
+    [string(File) at Pos],
+    !,
+    files_to_import(Files).
+files_to_import([]) --> [].
+
+define(define(Sig, Val) at Pos, Operators, Pos) -->
+    signature(Sig),
     !,
     curly_bracket(Start, Pos),
     bracketed_expr(Val, Operators, Start).
 define(_, _, Start) -->
     { throw(error('Invalid value signature in definition', []) at Start) }.
 
-signature(Name, Type) -->
+signature(sig(Name, Type)) -->
     [id(Name) at _],
     [':' at _],
+    !,
+    signature_tail(Type),
+    [operator('=') at _].
+signature_tail([]) -->
+    [operator('=') at _],
+    !.
+signature_tail(Type) -->
     type(Type),
     [operator('=') at _].
 
