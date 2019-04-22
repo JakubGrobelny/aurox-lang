@@ -5,17 +5,120 @@ parse_file(FileName, AST) :-
     tokenize_file(FileName, Tokens),
     empty_operator_list(Ops),
     catch(
-        phrase(parser(AST, Ops), Tokens), 
+        phrase(program(AST, Ops), Tokens), 
         error(Format, Args) at Pos, 
         print_error(Pos, FileName, Format, Args)
     ).
 
-parser(Tokens, Operators) -->
+program(Program, Operators) -->
     [keyword(defop) at Pos],
     !,
     operator_definition(Pos, Operators, NewOperators),
-    parser(Tokens, NewOperators).
-parser([], _) --> [].
+    program(Program, NewOperators).
+program([Expr | Program], Operators) -->
+    defexpr(Expr, Operators), 
+    rest_of_program(Program, Operators).
+rest_of_program([Expr | Exprs], Operators) -->
+    defexpr(Expr, Operators),
+    !,
+    rest_of_program(Exprs, Operators).
+rest_of_program([], _) --> [].
+
+defexpr(Definition, Operators) -->
+    [keyword(define) at Start],
+    !,
+    define(Definition, Operators, Start).
+defexpr(Definition, Operators) -->
+    [keyword(defun) at Start],
+    !,
+    defun(Definition, Operators, Start).
+defexpr(TypeDef, Operators) -->
+    [keyword(import) at Start],
+    !,
+    typedef(TypeDef, Operators, Start).
+defexpr(Import, _) -->
+    [keyword(import) at Start],
+    import(Import, Start).
+defexpr(Expr, Operators) -->
+    expr(Expr, Operators).
+
+define(define(sig(Name, Type), Val) at Pos, Operators, Pos) -->
+    signature(Name, Type, Pos),
+    !,
+    curly_bracket(Start, Pos),
+    bracketed_expr(Val, Operators, Start).
+define(_, _, Start) -->
+    { throw(error('Invalid value signature in definition', []) at Start) }.
+
+signature(Name, Type, _) -->
+    identifier(Name),
+    [':' at _],
+    type(Type),
+    [operator('=') at _].
+
+bracketed_expr(Expr, Operators, _) -->
+    expr(Expr, Operators),
+    curly_bracket_terminator(Start).
+
+curly_bracket(Position, _) -->
+    ['{' at Position],
+    !.
+curly_bracket(_, Start) -->
+    { throw(error('Missing opening curly bracket', []) at Start) }.
+
+curly_bracket_terminator(_) -->
+    ['{' at _],
+    !.
+curly_bracket_terminator(Start) -->
+    { throw(error('Curly bracket not terminated properly', []) at Start) }.
+
+% TODO:
+expr(IfElse, Operators) -->
+    [keyword(if) at Start],
+    !,
+    if_else(Start, IfElse, Operators).
+expr(PMatch, Operators) -->
+    [keyword(match) at Start],
+    !,
+    pattern_matching(Start, PMatch, Operators).
+expr(LetDef, Operators) -->
+    [keyword(let) at Start],
+    !,
+    let_definition(Start, LetDef, Operators).
+expr(sequence(Head, Tail), Operators) -->
+    tuple(Head),
+    !,
+    expr_seq(Tail, Operators).
+
+unit_literal(unit at Pos) -->
+    ['(' at Pos],
+    [')' at _].
+
+if_else(_, if(Condition, Consequence, Alternative), Operators) -->
+    parser(Condition, Operators),
+    if_consequence(Pos, Consequence, Operators),
+    if_alternative(Pos, Alternative, Operators),
+    !.
+if_else(Pos, _, _) -->
+    { throw(error('Syntax error in if-then-else expression', []) at Pos) }.
+
+if_consequence(_, Consequence, Ops) -->
+    [keyword(then) at _],
+    !,
+    parser(Consequence, Ops).
+if_consequence(Pos, _, _) -->
+    { 
+        throw(error('Missing "then" in if-then-else expression', []) at Pos) 
+    }.
+
+if_alternative(_, Alternative, Ops) -->
+    [keyword(else) at _],
+    !,
+    parser(Alternative, Ops).
+if_alternative(Pos, _, _) -->
+    {
+        throw(error('Missing "else" in if-then-else expression', []) at Pos)
+    }.
 
 operator_definition(_, PrevOperators, NewOperators) -->
     ['{' at _],
@@ -50,13 +153,12 @@ valid_associativity(id(Assoc), _) :-
     member(Assoc, [left, right, none, left_unary, right_unary]),
     !.
 valid_associativity(id(Assoc), Pos) :-
-    throw(
-        error(
-            'Invalid operator associativity type ~w in operator declaration. \c
-             Allowed types are left, right, none, left_unary and right_unary', 
-            [Assoc]
-        ) at Pos
-    ).
+    atomic_list_concat(
+        ['Invalid operator associativity type ~w in operator declaration.',
+         'Allowed types are left, right, none, left_unary and right_unary'], 
+        ErrorMessage
+    ),
+    throw(error(ErrorMessage, [Assoc]) at Pos).
 
 empty_operator_list(
         ops([[[], [], [], [], [], []],

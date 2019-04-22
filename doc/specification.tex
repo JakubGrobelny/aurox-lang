@@ -252,14 +252,14 @@ gdzie\\
     \alt \textbf{[} <krotka> \texttt{|} <wyrażenie> \textbf{]}
 
 <let-definicja> ::=
-    \textbf{let} <definicja> <and-definicje>
+    \textbf{let} <sygnatura> <wyrażenie> <and-definicje>
     \textbf{in} \textbf{\{} <wyrażenie> \textbf{\}} 
 
-<definicja> ::=
-    <identyfikator> \textbf{:} <typ> \textbf{=} <wyrażenie>
+<sygnatura> ::=
+    <identyfikator> \textbf{:} <typ> \textbf{=}
 
 <define-definicja> ::=
-    \textbf{define} <definicja> \textbf{\{} <wyrażenie> \textbf{\}}
+    \textbf{define} <sygnatura> \textbf{\{} <wyrażenie> \textbf{\}}
 
 <defun-definicja> ::=
     \textbf{defun} <nazwa-funkcji> <lista-parametrów> \textbf{:} <typ> 
@@ -309,7 +309,7 @@ gdzie\\
 
 <and-definicje> ::=
     $\epsilon$
-    \alt \textbf{and} <definicja> <and-definicje>
+    \alt \textbf{and} <sygnatura> <wyrażenie> <and-definicje>
 
 <wyrażenie> ::=
     <sekwencja-wyrażeń>
