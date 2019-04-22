@@ -190,6 +190,126 @@ expr(sequence(Head, Tail), Operators) -->
     !,
     expr_seq(Tail, Operators).
 
+expr_seq([Expr | Exprs], Operators) -->
+    [';' at _],
+    !,
+    expr(Expr, Operators),
+    expr_seq(Exprs, Operators).
+expr_seq([], _) --> [].
+
+pattern_matching(_, pmatch(Expr, Patterns), Operators) -->
+    expr(Expr, Operators),
+    !,
+    curly_bracket(BracketStart, _),
+    pattern_list(Patterns, Operators),
+    curly_bracket_terminator(BracketStart).
+pattern_matching(Start, _, _) -->
+    { throw(error('Invalid pattern matching expression', []) at Start) }.
+
+pattern_list([Pattern at Start | Patterns], Operators) -->
+    [keyword(case) at Start],
+    !,
+    pattern_case(Pattern, Start, Operators),
+    pattern_list(Patterns, Operators).
+pattern_list([]) --> [].
+
+pattern_case(pattern_case(Pattern, Expr) at Pos, Pos, Operators) -->
+    guarded_pattern(Pattern, Pos),
+    !,
+    pattern_arrow(Pos),
+    pattern_expr(Expr, Pos, Operators).
+pattern_case(_, Pos, _) -->
+    { throw(error('Invalid pattern in pattern matching case', []) at Pos) }.
+
+pattern_arrow(_) -->
+    [operator('=>') at _],
+    !.
+pattern_arrow(Pos) -->
+    { throw(error('Missing => operator in pattern matching case', []) at Pos) }.
+
+pattern_expr(Expr, _, Operators) -->
+    expr(Expr, Operators),
+    !.
+pattern_expr(_, Pos, _) -->
+    { throw(error('Invalid expression in pattern matching', []) at Pos) }.
+
+guarded_pattern(Pattern at Start, Start) -->
+    pattern(Pattern),
+    !.
+guarded_pattern(_, Start) -->
+    { throw(error('Invalid pattern in pattern matching', []) at Start) }.
+
+pattern(Pattern) -->
+    atomic_pattern(Pattern),
+    !.
+pattern(Pattern) -->
+    deconstructor_pattern(Pattern),
+    !.
+
+atomic_pattern(id(Id)) -->
+    [id(Id) at _],
+    !.
+atomic_pattern(Pattern) -->
+    ['[' at _],
+    !,
+    list_pattern(Pattern).
+atomic_pattern(Pattern) -->
+    ['(' at _],
+    !,
+    tuple_pattern(Pattern),
+    [')' at _].
+atomic_pattern(Const) -->
+    pattern_constant(Const),
+    !.
+
+deconstructor_pattern(Deconstructor) -->
+    [tid(Constructor) at _],
+    deconstructor_pattern_args(Constructor, Deconstructor).
+
+deconstructor_pattern_args(Constructor, deconstructor(Constructor, Arg)) -->
+    atomic_pattern(Arg),
+    !.
+deconstructor_pattern_args(Constructor, deconstructor(Constructor)) --> [].
+
+tuple_pattern([Pattern | Tail]) -->
+    pattern(Pattern),
+    tuple_pattern_tail(Tail).
+
+tuple_pattern_tail([Pattern | Tail]) -->
+    [',' at _],
+    !,
+    pattern(Pattern),
+    tuple_pattern_tail(Tail).
+tuple_pattern_tail([]) -->
+    [].
+
+list_pattern([]-[]) -->
+    [']' at _],
+    !.
+list_pattern(Elements-Tail) -->
+    tuple_pattern(Elements),
+    list_pattern_tail(Tail),
+    [']' at _].
+
+list_pattern_tail(id(Tail)) -->
+    [operator('|') at _],
+    [id(Tail) at _].
+
+pattern_constant(C) -->
+    [integer(C) at _],
+    !.
+pattern_constant(C) -->
+    [int(C) at _],
+    !.
+pattern_constant(C) -->
+    [string(C) at _],
+    !.
+pattern_constant(C) -->
+    [char(C) at _],
+    !.
+pattern_constant(unit) -->
+    unit_literal(_).
+
 unit_literal(unit at Pos) -->
     ['(' at Pos],
     [')' at _].

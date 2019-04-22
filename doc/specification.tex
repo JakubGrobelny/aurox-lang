@@ -173,12 +173,8 @@ gdzie\\
     \alt <identyfikator> <lista-parametrów>
 
 <stała> ::=
-    <literał-całkowitoliczbowy>
-    \alt <literał-zmiennopozycyjny>
-    \alt <literał-napisowy>
-    \alt <literał-znakowy>
+    <stała-wzorcowa>
     \alt <literał-funkcyjny>
-    \alt \textbf{(\,)}
 
 <wyrażenie-atomowe> ::=
     \textbf{(} <wyrażenie> \textbf{)}
@@ -208,10 +204,17 @@ gdzie\\
     \alt <nazwa-typu>
 
 <wzorzec-atomowy> ::=
-    <stała>
+    <stała-wzorcowa>
     \alt <identyfikator>
     \alt \textbf{(} <krotka-wzorców> \textbf{)}
     \alt <wzorzec-listowy>
+
+<stała-wzorcowa> ::=
+    <literał-całkowitoliczbowy>
+    \alt <literał-zmiennopozycyjny>
+    \alt <literał-napisowy>
+    \alt <literał-znakowy>
+    \alt \textbf{(\,)}
 
 <krotka-wzorców> ::=
     <wzorzec>

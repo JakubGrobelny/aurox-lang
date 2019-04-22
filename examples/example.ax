@@ -25,9 +25,9 @@ define map : (a -> b) -> [a] -> [b] = {
     }
 }
 
-defun absurd : Void -> a = {
-    match {}
-}
+# defun absurd : Void -> a = {
+#     match {}
+# }
 
 let n := read_int () in {
     write $ map { |x| x*n } [1,2,3,4,5,6]
