@@ -42,6 +42,49 @@ defexpr(Import, _) -->
 defexpr(Expr, Operators) -->
     expr(Expr, Operators).
 
+typedef(typedef(Name, Parameters, Constructors), _, Start) -->
+    typedef_name(Name, Start),
+    typedef_params(Parameters, Start),
+    curly_bracket(BracketStart, Start),
+    typedef_constructors(Constructors, Start),
+    curly_bracket_terminator(BracketStart).
+
+typedef_constructors([constructor(Name, Type) | Constructors], Start) -->
+    [tid(Name) at _],
+    !,
+    typedef_constructor_type(Type),
+    typedef_constructors(Constructors, Start).
+typedef_constructors([]) --> [].
+
+typedef_constructor_type(Type) -->
+    ['{' at BracketStart],
+    !,
+    type(Type at _),
+    curly_bracket_terminator(BracketStart).
+typedef_constructor_type([]) --> [].
+
+typedef_params(Params, Start) -->
+    [':' at _],
+    !,
+    typedef_params_list(Params, Start).
+typedef_params([], _) --> [].
+
+typedef_params_list([Param | Tail], _) -->
+    [id(Param) at _],
+    typedef_params_list_tail(Tail).
+typedef_params_list(_, Start) -->
+    { throw(error('Invalid type parameter', []) at Start) }.
+typedef_params_list_tail([Param | Tail], _) -->
+    [id(Param) at _],
+    typedef_params_list_tail(Tail).
+typedef_params_list_tail([]) --> [].
+
+typedef_name(Name, _) -->
+    [tid(Name) at _],
+    !.
+typedef_name(_, Start) -->
+    { throw(error('Invalid type name', []) at Start) }.
+
 defun(defun(Name, Args, Type, Body) at Pos, Operators, Pos) -->
     argument_sequence([Name | Args]), 
     !,
