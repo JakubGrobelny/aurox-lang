@@ -181,7 +181,7 @@ expr(PMatch, Operators) -->
     [keyword(match) at Start],
     !,
     pattern_matching(Start, PMatch, Operators).
-expr(LetDef, Operators) -->
+expr(LetDef at Start, Operators) -->
     [keyword(let) at Start],
     !,
     let_definition(Start, LetDef, Operators).
@@ -189,6 +189,8 @@ expr(sequence(Head, Tail), Operators) -->
     tuple(Head),
     !,
     expr_seq(Tail, Operators).
+
+% let_definition(Start, let_defs()) TODO:
 
 expr_seq([Expr | Exprs], Operators) -->
     [';' at _],
@@ -271,7 +273,7 @@ deconstructor_pattern_args(Constructor, deconstructor(Constructor, Arg)) -->
     !.
 deconstructor_pattern_args(Constructor, deconstructor(Constructor)) --> [].
 
-tuple_pattern([Pattern | Tail]) -->
+tuple_pattern(tuple([Pattern | Tail])) -->
     pattern(Pattern),
     tuple_pattern_tail(Tail).
 
@@ -283,28 +285,30 @@ tuple_pattern_tail([Pattern | Tail]) -->
 tuple_pattern_tail([]) -->
     [].
 
-list_pattern([]-[]) -->
+list_pattern([]) -->
     [']' at _],
     !.
-list_pattern(Elements-Tail) -->
-    tuple_pattern(Elements),
+list_pattern([Elements | Tail]) -->
+    tuple_pattern(tuple(Elements)),
     list_pattern_tail(Tail),
     [']' at _].
 
 list_pattern_tail(id(Tail)) -->
     [operator('|') at _],
+    !,
     [id(Tail) at _].
+list_pattern_tail([]) --> [].
 
-pattern_constant(C) -->
+pattern_constant(integer(C)) -->
     [integer(C) at _],
     !.
-pattern_constant(C) -->
-    [int(C) at _],
+pattern_constant(float(C)) -->
+    [float(C) at _],
     !.
-pattern_constant(C) -->
+pattern_constant(string(C)) -->
     [string(C) at _],
     !.
-pattern_constant(C) -->
+pattern_constant(char(C)) -->
     [char(C) at _],
     !.
 pattern_constant(unit) -->
@@ -428,28 +432,20 @@ atomic_type(Type) -->
     type(Type),
     [')' at _].
 
-empty_operator_list(
-        ops([[[], [], [], [], [], []],
-             [[], [], [], [], [], []],
-             [[], [], [], [], [], []],
-             [[], [], [], [], [], []],
-             [[], [], [], [], [], []]])
-).
+empty_operator_list(D) :-
+    dict_create(D, ops, []).
 
-translate_assoc(left, 0) :- 
-    !.
-translate_assoc(right, 1) :- 
-    !.
-translate_assoc(none, 2) :-
-    !.
-translate_assoc(left_unary, 3) :- 
-    !.
-translate_assoc(right_unary, 4).
+update_operators(Op, Priority, Assoc, Ops, NewOps) :-
+    put_dict(Op, Ops, (Priority, Assoc), NewOps).
 
-update_operators(Op, Priority, Assoc, ops(Ops), ops(NewOps)) :-
-    translate_assoc(Assoc, AssocNum),
-    get_nth(Ops, AssocNum, OpsWithAssoc, RestAssocs),
-    get_nth(OpsWithAssoc, Priority, OpsWithPriority, RestPriority),
-    select(Op, NewOpsWithPriority, OpsWithPriority),
-    put_nth(RestPriority, Priority, NewOpsWithPriority, NewOpsWithAssoc),
-    put_nth(RestAssocs, AssocNum, NewOpsWithAssoc, NewOps).
+get_operators(OpsDict, Priority, Assoc, MatchingOperators) :-
+    dict_pairs(OpsDict, _, Ops),
+    filter_operators(Ops, Priority, Assoc, MatchingOperators).
+
+filter_operators([], _, _, []) :-
+    !.
+filter_operators([Op-(Priority, Assoc) | Ops], Priority, Assoc, [Op | OpT]) :-
+    !,
+    filter_operators(Ops, Priority, Assoc, OpT).
+filter_operators([_ | Ops], Priority, Assoc, Filtered) :-
+    filter_operators(Ops, Priority, Assoc, Filtered).
