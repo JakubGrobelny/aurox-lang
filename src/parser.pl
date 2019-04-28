@@ -40,7 +40,18 @@ defexpr(Import, _) -->
     [keyword(import) at Start],
     import(Import, Start).
 defexpr(Expr, Operators) -->
-    expr(Expr, Operators).
+    expr(Expr, Operators),
+    !.
+defexpr(_, _) -->
+    [Something at Pos],
+    { 
+        throw(
+            error(
+                'Invalid expression or statement starting with ~w', 
+                [Something]
+            ) at Pos
+        ) 
+    }.
 
 typedef(typedef(Name, Parameters, Constructors), _, Start) -->
     typedef_name(Name, Start),
@@ -103,19 +114,19 @@ defun_rest(Type, Body, Start, Operators) -->
 defun_rest(_, _, Start, _) -->
     { throw(error('Missing ":=" in function definition', []) at Start) }.
 
-argument(Arg) -->
+var_name(Arg) -->
     ['(' at _],
     !,
     [operator(Arg) at _],
     [')' at _].
-argument(Arg) -->
-    [id(Arg)].
+var_name(Arg) -->
+    [id(Arg) at _].
 
 argument_sequence([Arg | Tail]) -->
-    argument(Arg),
+    var_name(Arg),
     argument_sequence_tail(Tail).
 argument_sequence_tail([Arg | Tail]) -->
-    argument(Arg),
+    var_name(Arg),
     !,
     argument_sequence_tail(Tail).
 argument_sequence_tail([]) --> [].
@@ -145,7 +156,7 @@ define(_, _, Start) -->
     { throw(error('Invalid value signature in definition', []) at Start) }.
 
 signature(sig(Name, Type)) -->
-    [id(Name) at _],
+    var_name(Name),
     [':' at _],
     !,
     signature_tail(Type).
@@ -189,7 +200,37 @@ expr(sequence(Head, Tail), Operators) -->
     !,
     expr_seq(Tail, Operators).
 
-% TODO: tuple/3
+operator_kind(Op, Pos, Priority, Assoc, Operators) -->
+    [operator(Op) at Pos],
+    { is_operator_type(Op, Priority, Assoc, Operators) }.
+
+tuple(Expr, Operators) -->
+    w0n(LExpr, Operators),
+    tuple_tail(Rest, Operators),
+    {
+        (Rest = []) -> 
+            Expr = LExpr;
+            Expr = tuple(LExpr, Rest)
+    }.
+tuple_tail(Expr, Operators) -->
+    [',' at _],
+    !,
+    tuple(Expr, Operators).
+tuple_tail([], _) --> [].
+
+w0n(Expr, Operators) -->
+    w0r(E1, Operators),
+    w0n__(E1, Expr).
+w0n__(Acc, Res) -->
+    operator_kind(Op, _, 0, none, Operators),
+    !,
+    w0r(E1, Operators),
+    { NewAcc =.. [application, Op, Acc, E1] },
+    w0n__(NewAcc, Res).
+w0n__(Acc, Acc) --> [].
+
+% TODO: decide how to deal with right associative operators
+
 
 let_definition(Start, let_definition(Sig, Val, In) at Start, Ops) -->
     signature(Sig),
@@ -218,17 +259,17 @@ pattern_matching(Start, pmatch(Expr, Patterns) at Start, Operators) -->
     expr(Expr, Operators),
     !,
     curly_bracket(BracketStart, _),
-    pattern_list(Patterns, Operators),
+    pattern_cases(Patterns, Operators),
     curly_bracket_terminator(BracketStart).
 pattern_matching(Start, _, _) -->
     { throw(error('Invalid pattern matching expression', []) at Start) }.
 
-pattern_list([Pattern at Start | Patterns], Operators) -->
+pattern_cases([Pattern at Start | Patterns], Operators) -->
     [keyword(case) at Start],
     !,
     pattern_case(Pattern, Start, Operators),
-    pattern_list(Patterns, Operators).
-pattern_list([]) --> [].
+    pattern_cases(Patterns, Operators).
+pattern_cases([]) --> [].
 
 pattern_case(pattern_case(Pattern, Expr) at Pos, Pos, Operators) -->
     guarded_pattern(Pattern, Pos),
@@ -263,8 +304,8 @@ pattern(Pattern) -->
     deconstructor_pattern(Pattern),
     !.
 
-atomic_pattern(id(Id)) -->
-    [id(Id) at _],
+atomic_pattern(Name) -->
+    var_name(Name),
     !.
 atomic_pattern(Pattern) -->
     ['[' at _],
@@ -308,10 +349,10 @@ list_pattern([Elements | Tail]) -->
     list_pattern_tail(Tail),
     [']' at _].
 
-list_pattern_tail(id(Tail)) -->
+list_pattern_tail(Name) -->
     [operator('|') at _],
     !,
-    [id(Tail) at _].
+    var_name(Name).
 list_pattern_tail([]) --> [].
 
 pattern_constant(integer(C)) -->
@@ -464,3 +505,6 @@ filter_operators([Op-(Priority, Assoc) | Ops], Priority, Assoc, [Op | OpT]) :-
     filter_operators(Ops, Priority, Assoc, OpT).
 filter_operators([_ | Ops], Priority, Assoc, Filtered) :-
     filter_operators(Ops, Priority, Assoc, Filtered).
+
+is_operator_type(Op, Priority, Assoc, Operators) :-
+    get_dict(Op, Operators, (Priority, Assoc)).

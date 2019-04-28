@@ -77,3 +77,8 @@ in write $ odd 42
 if odd 10
     then write "true"
     else write "false"
+
+type Either : a b {
+    Left { a }
+    Right { b }
+}
