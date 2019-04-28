@@ -148,8 +148,7 @@ signature(sig(Name, Type)) -->
     [id(Name) at _],
     [':' at _],
     !,
-    signature_tail(Type),
-    [operator('=') at _].
+    signature_tail(Type).
 signature_tail([]) -->
     [operator('=') at _],
     !.
@@ -190,7 +189,23 @@ expr(sequence(Head, Tail), Operators) -->
     !,
     expr_seq(Tail, Operators).
 
-% let_definition(Start, let_defs()) TODO:
+% TODO: tuple/3
+
+let_definition(Start, let_definition(Sig, Val, In) at Start, Ops) -->
+    signature(Sig),
+    expr(Val, Ops),
+    !,
+    let_definition_in_expr(Start, In, Ops).
+let_definition(Start, _, _) -->
+    { throw(error('Ill formed let definition', []) at Start) }.
+
+let_definition_in_expr(Start, In, Ops) -->
+    [keyword(in) at _],
+    !,
+    curly_bracket(CurlyBracketStart, Start),
+    bracketed_expr(In, Ops, CurlyBracketStart).
+let_definition_in_expr(Start, _, _) -->
+    { throw(error('Missing in keyword in let definition', []) at Start) }.
 
 expr_seq([Expr | Exprs], Operators) -->
     [';' at _],
@@ -199,7 +214,7 @@ expr_seq([Expr | Exprs], Operators) -->
     expr_seq(Exprs, Operators).
 expr_seq([], _) --> [].
 
-pattern_matching(_, pmatch(Expr, Patterns), Operators) -->
+pattern_matching(Start, pmatch(Expr, Patterns) at Start, Operators) -->
     expr(Expr, Operators),
     !,
     curly_bracket(BracketStart, _),

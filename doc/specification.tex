@@ -255,7 +255,7 @@ gdzie\\
     \alt \textbf{[} <krotka> \texttt{|} <wyrażenie> \textbf{]}
 
 <let-definicja> ::=
-    \textbf{let} <sygnatura> <wyrażenie> <and-definicje>
+    \textbf{let} <sygnatura> <wyrażenie>
     \textbf{in} \textbf{\{} <wyrażenie> \textbf{\}} 
 
 <sygnatura> ::=
@@ -309,10 +309,6 @@ gdzie\\
     \alt <nazwa-typu>
     \alt \textbf{(} <typ> \textbf{)}
     \alt \textbf{[} <typ> \textbf{]}
-
-<and-definicje> ::=
-    $\epsilon$
-    \alt \textbf{and} <sygnatura> <wyrażenie> <and-definicje>
 
 <wyrażenie> ::=
     <sekwencja-wyrażeń>
