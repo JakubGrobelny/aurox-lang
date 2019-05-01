@@ -1,29 +1,43 @@
 import {
     IO
     "file.ax"
-}
+}.
 
-defop { $ 0 right }
+defop $ 0 right.
 
 defun ($) f x : (a -> b) -> a -> b = f x.
+
+printf "1 + 2 = ~w" (1 + 2).
 
 define π : Float = 3.14.
 
 type Tree : a {
     Leaf
     Node { Tree a, a, Tree a }
-}
+}.
 
-defun tree_mult_by_π t : Tree Int -> Tree Int =
+define tree_mult_by_π t : Tree Int -> Tree Int =
     match t {
         case Leaf => Leaf
-        case Node (l, v, r) => Node (tree_mult_by_π l, π * v, tree_mult_by_π r)
-    }
+        case Node (l, v, r) => 
+            Node (
+                tree_mult_by_π l, π * v, tree_mult_by_π r
+            )
+    }.
+
+define map f xs : (a -> b) -> [a] -> [b] =
+    match xs {
+        case [] => []
+        case [x | xs] => [f x | map f xs]
+    }.
+
+define factorial n : Integer -> Integer =
+    match n {
+        case 0 => 1
+        case _ => n * factorial $ n - 1
+    }.
 
 
-
-
-
-
-
-
+printf "Hello, world" ();
+let square := {|x| x*x} in 
+    map square [1,2,3,4,5,6,7,8].

@@ -15,52 +15,86 @@ parser_file(FileName, AST) :-
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-program(Program, Operators) -->
+program(Program, OldOperators) -->
     [keyword(defop) at DefOpStart],
     !,
     operator_definition(DefOpStart, OldOperators, NewOperators),
     program(Program, NewOperators).
-program([Definition | Program], Operators) -->
-    definition(Definition, Operators),
+program([Import | Program], Operators) -->
+    [keyword(import) at ImportStart],
     !,
+    import_statement(ImportStart, Import),
     program(Program, Operators).
-program([Expression], Operators) -->
-    expression(Expression, Operators),
-    !.
-program(_, _) -->
-    [Token at Position],
+program([Definition | Program], Operators) -->
+    [keyword(define) at DefineStart],
     !,
-    { 
-        throw(
-            error(
-                'Invalid expression or statement starting with token ~w', 
-                [Token]
-            ) at Position
-        ) 
-    }.
+    define_statement(DefineStart, Definition),
+    program(Program, Operators).
+program([FunctionDefinition | Program], Operators) -->
+    [keyword(defun) at DefunStart],
+    !,
+    defun_statement(DefunStart, FunctionDefinition),
+    program(Program, Operators).
+program([TypeDefinition | Program], Operators) -->
+    [keyword(type) at TypeDefStart],
+    !,
+    type_definition(TypeDefStart, TypeDefinition),
+    program(Program, Operators).
+program([Expression | Program], Operators) -->
+    peek(_ at ExprStart),
+    !
+    top_level_expression(ExprStart, Expression).
 program([], _) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
-%           DEFINITIONS             %
+%          FILE IMPORTS             %
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-definition(Definition, Operators) -->
-    [keyword(define) at Start],
+import_statement(Start, import(Files)) -->
+    curly_bracket(BracketStart, Start),
+    list_of_files_to_import(Start, Files),
+    curly_bracket_terminator(BracketStart).
+
+list_of_files_to_import(Start, [File | Files]) -->
+    file_name_to_import(Start, File),
+    !.
+    list_of_files_to_import(Start, Files),
+list_of_files_to_import(_, []) --> [].
+
+file_name_to_import(_, module_name(Module) at Pos) -->
+    [tid(Module) at Pos],
+    !.
+file_name_to_import(_, file_name(File) at Pos) -->
+    [string(File) at Pos],
+    !.
+file_name_to_import(Start, _) -->
+    [Token at Pos],
+    {
+        \+ Token = '}',
+        throw_invalid_file_name_token(Token, Pos)
+    },
+    !.
+
+throw_invalid_file_name_token(Token, Pos) :-
+    Token =.. [Functor, Value],
     !,
-    define(Definition, Operators, Start).
-definition(Definition, Operators) -->
-    [keyword(defun) at Start],
-    !,
-    defun(Definition, Operators, Start).
-definition(TypeDef, Operators) -->
-    [keyword(type) at Start],
-    !,
-    typedef(TypeDef, Operators, Start).
-definition(Import, _) -->
-    [keyword(import) at Start],
-    import(Import, Start).
+    throw(
+        error(
+            'Invalid token ~w of type ~w in import statement.\c 
+             Valid import specifiers are either capitalized module names \c
+             or strings with file names', 
+            [Functor, Value]
+        ) at Pos
+    ).
+throw_invalid_file_name_token(Token, Pos) :-
+    throw(
+        error(
+            'Unexpected token ~w in import statement.'
+             [Token]
+        ) at Pos
+    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -68,39 +102,35 @@ definition(Import, _) -->
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+define_statement(Start, define(Name, Arguments, Type, Value) at Start) -->
+    valid_variable_name(Start, Name),
+    formal_parameters(Start, Arguments),
+    colon(Start),
+    type(Type),
+    assignment_operator(Start),
+    top_level_expression(Start, Value).
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                   %
-%         FILE IMPORTS              %
-%                                   %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-import(import(Files), Start) -->
-    curly_bracket(_, Start),
-    !,
-    files_to_import(Files),
-    curly_bracket_terminator(Start).
-
-files_to_import([File at Pos | Files]) -->
-    [tid(File) at Pos],
-    !,
-    files_to_import(Files).
-files_to_import([File at Pos | Files]) -->
-    [string(File) at Pos],
-    !,
-    files_to_import(Files).
-files_to_import(_) -->
+valid_variable_name(_, id(Name)) -->
+    [id(Name) at _],
+    !.
+valid_variable_name(_, operator(Op)) -->
+    ['(' at _],
+    [operator(Op) at _],
+    [')' at _],
+    !.
+valid_variable_name(DefinitionStart, _) -->
     [Something at Somewhere],
     !,
-    { throw_unexpected_token(Something, Somewhere) }.
-files_to_import([]) --> [].
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
-%      AUXILIARY                    %
+%             AUXILIARY             %
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+peek(Token), [Token] -->
+    [Token].
 
 throw_unexpected_token(Token, Position) :-
     Token =.. [Type, Value],
@@ -110,6 +140,19 @@ throw_unexpected_token(Token, Position) :-
             [Value, Type]
         ) at Position
     ).
+
+dot_terminator(_) -->
+    ['.' at _],
+    !.
+dot_terminator(StatementStart, Where) -->
+    {
+        throw(
+            error(
+                'Missing expected dot terminator after ~w',
+                [Where]
+            ) at StatementStart
+        )
+    }.
 
 curly_bracket(Position, _) -->
     ['{' at Position],
@@ -142,25 +185,23 @@ square_bracket_terminator(Start) -->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 operator_definition(_, OldOperators, NewOperators) -->
-    ['{' at _],
-    [operator(Operator) at _],
-    [integer(Priority) at PriorityPos],
-    [id(Associativity) at AssocPos],
-    ['}' at _],
+    [operator(Op) at _],
+    [integer(Priority) at PStart],
+    [id(Associativity) at AStart},
+    !,
     {
-        valid_priority(Priority, PriorityPos),
-        valid_associativity(Associativity, AssocPos),
+        valid_priority(Priority, PStart),
+        valid_associativity(Associativity, AStart),
         update_operators(
-            Operator,
-            Priority,
-            Associativity,
-            OldOperators,
+            Op, 
+            Priority, 
+            Associativity, 
+            OldOperators, 
             NewOperators
-        )
-    },
-    !.
-operator_definition(DefOpStart, _, _) -->
-    { throw(error('Syntax error in operator definition', []) at DefOpStart) }.
+        ).
+    }.
+operator_definition(Start, _, _) -->
+    { throw(error('Syntax error in operator definition', []) at Start) }.
 
 valid_priority(N, _) :-
     member(N, [0,1,2,3,4,5]),
@@ -189,10 +230,5 @@ update_operators(Op, Priority, Assoc, Ops, NewOps) :-
 
 is_operator_type(Op, Priority, Assoc, Operators) :-
     get_dict(Op, Operators, (Priority, Assoc)).
-
-
-
-
-
 
 

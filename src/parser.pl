@@ -9,7 +9,7 @@ parse_file(FileName, AST) :-
         error(Format, Args) at Pos, 
         print_error(Pos, Format, Args)
     ).
-
+parse_file(FileName, AST) 
 program(Program, Operators) -->
     [keyword(defop) at Pos],
     !,

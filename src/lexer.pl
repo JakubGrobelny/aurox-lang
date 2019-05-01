@@ -66,7 +66,7 @@ char_error(Char, Pos, _) -->
 whitespace --> [' '],  !.
 whitespace --> ['\r'], !.
 whitespace --> ['\t'].
-
+ 
 newline --> ['\n'].
 
 comment_tail --> ['\n'], !.
@@ -138,7 +138,7 @@ classify_token(Atom, keyword(Atom)) :-
             let, and, in, if, 
             then, match, else, 
             with, type, import, 
-            define, defun, '_', defop
+            define, '_', defop
         ]
     ),
     !.
