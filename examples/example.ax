@@ -1,84 +1,29 @@
 import {
     IO
-    "file1.ax"
-    "file2.ax"
-    "file3.ax"
+    "file.ax"
 }
 
 defop { $ 0 right }
 
-defun ($) f x : (a -> b) -> a -> b = {
-    f x
-}
+defun ($) f x : (a -> b) -> a -> b = f x.
 
-defop { |> 0 left }
-
-defun (|>) x f : a -> (a -> b) -> b = {
-    f x
-}
-
-define map : (a -> b) -> [a] -> [b] = {
-    | f xs |
-    match xs {
-        case [] -> []
-        case [x | xs] -> [f x | map f xs]
-    }
-}
-
-# defun absurd : Void -> a = {
-#     match {}
-# }
-
-let n := read_int () in {
-    write $ map { |x| x*n } [1,2,3,4,5,6]
-}
-
-defop { % 5 right_unary }
-
-defun (%) x := {
-    x /. 100
-}
-
-write 50%
+define π : Float = 3.14.
 
 type Tree : a {
     Leaf
     Node { Tree a, a, Tree a }
 }
 
-defun mirror_tree t : Tree a -> Tree a = {
+defun tree_mult_by_π t : Tree Int -> Tree Int =
     match t {
         case Leaf => Leaf
-        case Node (l, v, r) => Node (mirror_tree l, v, mirror_tree r)
+        case Node (l, v, r) => Node (tree_mult_by_π l, π * v, tree_mult_by_π r)
     }
-}
 
-let n := read_int () in {
-    write $ div 5 (match n {
-        case 0 => 1
-        case _ => n
-    })
-}
 
-let odd :=
-    { |n| match n {
-        case 0 => false
-        case 1 => true
-        case _ => not $ even $ n - 1
-    }}
-and even :=
-    { |n| match n {
-        case 0 => true
-        case 1 => false
-        case _ => not $ odd $ n - 1
-    }}
-in write $ odd 42
 
-if odd 10
-    then write "true"
-    else write "false"
 
-type Either : a b {
-    Left { a }
-    Right { b }
-}
+
+
+
+

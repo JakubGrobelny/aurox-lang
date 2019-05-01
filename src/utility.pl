@@ -1,4 +1,4 @@
-print_error(pos(L, C), FileName, MessageFormat, MessageArgs) :-
+print_error(pos(FileName, L, C), MessageFormat, MessageArgs) :-
     atomic_list_concat(
         ['~w:~w:~w \u001b[31;1merror:\x1B[0m ', MessageFormat, '\n'],
         FinalFormat

@@ -14,9 +14,9 @@ tokenize_file(FileName, Tokens) :-
     string_to_list(String, ListOfChars),
     char_codes_to_atoms(ListOfChars, ListOfAtoms),
     catch(
-        phrase(lexer(Tokens, pos(1,1)), ListOfAtoms),
+        phrase(lexer(Tokens, pos(FileName, 1,1)), ListOfAtoms),
         error(Format, Args) at Pos,
-        print_error(Pos, FileName, Format, Args)
+        print_error(Pos, Format, Args)
     ).
 
 lowercase(Char) --> [Char], { char_type(Char, lower) }.
@@ -122,11 +122,11 @@ digit_seq_tail([Digit | DTail], Len) -->
 digit_seq_tail([], 0) --> [].
 
 special(Char) --> 
-    [Char], 
+    [Char],
     {
         member(
             Char, 
-            ['-', '+', '*', '/', '=', '.', '>', '<',
+            ['-', '+', '*', '/', '=', '>', '<',
              '!', '@', '%', '^', '~', '&', '$', '|']
         )
     }.
@@ -216,30 +216,31 @@ delimiter('(') --> ['('], !.
 delimiter(')') --> [')'], !.
 delimiter(',') --> [','], !.
 delimiter(':') --> [':'], !.
-delimiter(';') --> [';'].
+delimiter(';') --> [';'], !.
+delimiter(',') --> ['.'].
 
-lexer(Tokens, pos(L, C)) -->
+lexer(Tokens, pos(F, L, C)) -->
     whitespace, 
     !, 
     { NC is C + 1 }, 
-    lexer(Tokens, pos(L, NC)).
-lexer(Tokens, pos(L, _)) --> 
+    lexer(Tokens, pos(F, L, NC)).
+lexer(Tokens, pos(F, L, _)) --> 
     newline, 
     !, 
     { NL is L + 1 }, 
-    lexer(Tokens, pos(NL, 1)).
-lexer([Delimiter at pos(L, C) | Tokens], pos(L, C)) -->
+    lexer(Tokens, pos(F, NL, 1)).
+lexer([Delimiter at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     delimiter(Delimiter),
     !,
     { NC is C + 1 },
-    lexer(Tokens, pos(L, NC)).
-lexer(Tokens, pos(L, _)) -->
+    lexer(Tokens, pos(F, L, NC)).
+lexer(Tokens, pos(F, L, _)) -->
     ['#'], 
     !, 
     comment_tail, 
     { NL is L + 1 }, 
-    lexer(Tokens, pos(NL, 1)).
-lexer([op(Op) at pos(L, C) | Tokens], pos(L, C)) --> 
+    lexer(Tokens, pos(F, NL, 1)).
+lexer([op(Op) at pos(F, L, C) | Tokens], pos(F, L, C)) --> 
     special(OpHead), 
     !, 
     operator_tail(OpTail, Len), 
@@ -247,25 +248,25 @@ lexer([op(Op) at pos(L, C) | Tokens], pos(L, C)) -->
         NC is C + Len + 1,
         atomic_list_concat([OpHead | OpTail], Op)
     }, 
-    lexer(Tokens, pos(L, NC)).
-lexer([tid(TId) at pos(L, C) | Tokens], pos(L, C)) -->
+    lexer(Tokens, pos(F, L, NC)).
+lexer([tid(TId) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     uppercase(Letter), 
     !, 
     alphanum(Tail, Len), 
     { NC is C + Len + 1 },
-    lexer(Tokens, pos(L, NC)), 
+    lexer(Tokens, pos(F, L, NC)), 
     { atomic_list_concat([Letter | Tail], TId) }.
-lexer([Token at pos(L, C) | Tokens], pos(L, C)) -->
+lexer([Token at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     lowercase(Letter), 
     !, 
     alphanum(Tail, Len), 
     { NC is C + Len + 1 }, 
-    lexer(Tokens, pos(L, NC)), 
+    lexer(Tokens, pos(F, L, NC)), 
     {
         atomic_list_concat([Letter | Tail], Atom),
         classify_token(Atom, Token)
     }.
-lexer([Num at pos(L, C) | Tokens], pos(L, C)) -->
+lexer([Num at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     digit(D), 
     !, 
     digit_seq_tail(Digits, Len), 
@@ -274,16 +275,16 @@ lexer([Num at pos(L, C) | Tokens], pos(L, C)) -->
         NC is C + Len + FLen + 1,
         classify_number([D | Digits], FTail, Num)
     }, 
-    lexer(Tokens, pos(L, NC)).
-lexer([char(Char) at pos(L, C) | Tokens], pos(L, C)) -->
+    lexer(Tokens, pos(F, L, NC)).
+lexer([char(Char) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     char_delimiter,
     !,
-    char_literal(Char, Len, pos(L, C)),
+    char_literal(Char, Len, pos(F, L, C)),
     {
         NC is C + Len + 2 
     },
-    lexer(Tokens, pos(L, NC)).  
-lexer([string(Str) at pos(L, C) | Tokens], pos(L, C)) -->
+    lexer(Tokens, pos(F, L, NC)).  
+lexer([string(Str) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     string_delimiter,
     !,
     char_sequence(StrChars, Len),
@@ -291,8 +292,8 @@ lexer([string(Str) at pos(L, C) | Tokens], pos(L, C)) -->
         NC is C + Len + 2,
         atomic_list_concat(StrChars, Str)
     },
-    string_terminator(Str, pos(L, C)),
-    lexer(Tokens, pos(L, NC)).
+    string_terminator(Str, pos(F, L, C)),
+    lexer(Tokens, pos(F, L, NC)).
 lexer(_, Pos) -->
     [X],
     !,

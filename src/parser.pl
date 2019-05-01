@@ -7,7 +7,7 @@ parse_file(FileName, AST) :-
     catch(
         phrase(program(AST, Ops), Tokens), 
         error(Format, Args) at Pos, 
-        print_error(Pos, FileName, Format, Args)
+        print_error(Pos, Format, Args)
     ).
 
 program(Program, Operators) -->
@@ -38,6 +38,7 @@ defexpr(TypeDef, Operators) -->
     typedef(TypeDef, Operators, Start).
 defexpr(Import, _) -->
     [keyword(import) at Start],
+    !,
     import(Import, Start).
 defexpr(Expr, Operators) -->
     expr(Expr, Operators),
@@ -421,18 +422,18 @@ operator_definition(_, PrevOperators, NewOperators) -->
 operator_definition(Pos, _, _) -->
     { throw(error('Syntax error in operator definition', []) at Pos) }.
 
-valid_priority(integer(N), _) :-
+valid_priority(N, _) :-
     member(N, [0,1,2,3,4,5]),
     !.
-valid_priority(integer(N), Pos) :-
+valid_priority(N, Pos) :-
     throw(
         error('Invalid operator prority ~w in operator declaration', [N]) at Pos
     ).
 
-valid_associativity(id(Assoc), _) :-
+valid_associativity(Assoc, _) :-
     member(Assoc, [left, right, none, left_unary, right_unary]),
     !.
-valid_associativity(id(Assoc), Pos) :-
+valid_associativity(Assoc, Pos) :-
     atomic_list_concat(
         ['Invalid operator associativity type ~w in operator declaration.',
          'Allowed types are left, right, none, left_unary and right_unary'], 
