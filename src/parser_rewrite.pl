@@ -232,20 +232,31 @@ valid_associativity(Assoc, _) :-
     member(Assoc, [left, right, none, left_unary, right_unary]),
     !.
 valid_associativity(Assoc, Pos) :-
-    atomic_list_concat(
-        ['Invalid operator associativity type ~w in operator declaration.',
-         'Allowed types are left, right, none, left_unary and right_unary'], 
-        ErrorMessage
-    ),
-    throw(error(ErrorMessage, [Assoc]) at Pos).
+    throw(
+        error(
+            'Invalid operator associativity type ~w in operator declaration.\c,
+             Allowed types are left, right, none, left_unary and right_unary', 
+            [Assoc]
+        ) at Pos
+    ).
 
 empty_operator_list(D) :-
     dict_create(D, ops, []).
 
+infix(Assoc) :-
+    member(Assoc, [left, right, none]).
+
 update_operators(Op, Priority, Assoc, Ops, NewOps) :-
-    put_dict(Op, Ops, (Priority, Assoc), NewOps).
+    infix(Assoc),
+    !,
+    put_dict((Op, infix), Ops, (Priority, Assoc), NewOps).
+update_operators(Op, Priority, UnaryAssoc, Ops, NewOps) :-
+    put_dict(Op, UnaryAssoc), Ops, (Priority, UnaryAssoc), NewOps).
 
 is_operator_type(Op, Priority, Assoc, Operators) :-
-    get_dict(Op, Operators, (Priority, Assoc)).
-
+    member(Assoc, [left, right, none]),
+    !,    
+    get_dict((Op, infix), Operators, (Priority, Assoc)).
+is_operator_type(Op, Priority, UnaryAssoc, Operators) :-
+    get_dict((Op, UnaryAssoc), Operators, (Priority, Assoc)).
 

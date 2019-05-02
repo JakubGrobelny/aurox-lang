@@ -14,7 +14,7 @@ define π : Float = 3.14.
 type Tree : a {
     Leaf
     Node { Tree a, a, Tree a }
-}.
+}
 
 define tree_mult_by_π t : Tree Int -> Tree Int =
     match t {
@@ -23,19 +23,22 @@ define tree_mult_by_π t : Tree Int -> Tree Int =
             Node (
                 tree_mult_by_π l, π * v, tree_mult_by_π r
             )
-    }.
+    }
+.
 
 define map f xs : (a -> b) -> [a] -> [b] =
     match xs {
         case [] => []
         case [x | xs] => [f x | map f xs]
-    }.
+    }
+.
 
 define factorial n : Integer -> Integer =
     match n {
         case 0 => 1
         case _ => n * factorial $ n - 1
-    }.
+    }
+.
 
 
 printf "Hello, world" ();
