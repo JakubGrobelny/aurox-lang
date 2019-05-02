@@ -33,7 +33,7 @@ end
 
 define map f xs : (a -> b) -> [a] -> [b] =
     match xs with
-        case [] => []
+        case [] => [] 
         case [x | xs] => [f x | map f xs]
     end
 end

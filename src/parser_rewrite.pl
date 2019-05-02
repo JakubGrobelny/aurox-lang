@@ -256,7 +256,9 @@ is_operator_type(Op, Priority, UnaryAssoc, Operators) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 type(Type) -->
-    tuple_type(Type).
+    tuple_type(Type),
+    !.
+type(undefined) --> [].
 
 tuple_type(Type) -->
     function_type(Left),
@@ -349,6 +351,57 @@ expression(Tuple) -->
 % TODO: consider changing tuple priority to be
 %       lower than other expression types in 
 %       expression(...) rule
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%       ARITHMETIC EXPRESSIONS      %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% TODO: 1. lists, 2. unit type
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%     CONDITIONAL EXPRESSIONS       %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+conditional_expression(Start, if(Cond, Cons, Alt)) -->
+    expression_top_level(Start, Cond),
+    expected_token(Start, keyword(then), 'then keyword', ThenStart),
+    expression_top_level(ThenStart, Cons),
+    conditional_expression_else(Start, Alt).
+
+conditional_expression_else(_, unit) -->
+    [keyword(end) at _],
+    !.
+conditional_expression_else(Start, Alt) -->
+    expected_token(Start, keyword(else), 'else keyword', ElseStart),
+    expression_top_level(ElseStart, Alt),
+    expected_token(Start, keyword(end), 'end keyword', _).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%         LET EXPRESSIONS           %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+let_definition(Start, let(Name, Type, Value, Expression)) -->
+    let_definition_name(Start, Name),
+    expected_token(Start, ':', 'colon operator', _),
+    type(Type),
+    expected_token(Start, operator('='), 'assignment operator', _),
+    expression_top_level(Start, Value),
+    expected_token(Start, keyword(in), 'in keyword', _),
+    expression_top_level(Start, Expression)
+    expected_token(Start, keyword(end), 'end keyword', _).
+
+let_definition_name(_, Name) -->
+    valid_variable_name(Name),
+    !.
+let_definition_name(Start, _) -->
+    { throw(error('Invalid variable name in let definition', []) at Start) }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
