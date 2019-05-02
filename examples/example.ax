@@ -11,9 +11,13 @@ end
 
 printf "1 + 2 = ~w" (1 + 2)
 
-define π : Float = 3.14
+define π : Float = 
+    3.14 
+end
 
-define π2 : Float = (2 * π)
+define π2 : Float = 
+    2 * π 
+end
 
 type Tree of a with
     case Leaf

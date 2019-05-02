@@ -38,7 +38,7 @@ program([TypeDefinition | Program], Operators) -->
 program([Expression | Program], Operators) -->
     peek(_ at ExprStart),
     !
-    expression(ExprStart, Expression).
+    expression_top_level(ExprStart, Expression).
 program([], _) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +88,7 @@ define_statement(Start, define(Name, Arguments, Type, Value) at Start) -->
     expected_token(Start, ':', colon, _),
     type(Type),
     expected_token(Start, operator('='), 'assignment operator', _),
-    expression(Start, Value),
+    expression_top_level(Start, Value),
     expected_token(Start, operator(end), 'end keyword', _).
 define_statement(Start, _) -->
     { throw(error('Syntax error in definition', []) at Start) }.
@@ -315,6 +315,132 @@ atomic_type(Type) -->
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+expression_top_level(Start, Expr at Start) -->
+    expression_sequence(Expr),
+    !.
+expression_top_level(Start, _) -->
+    { throw(error('Syntax error in expression', []) at Start) }.
+
+expression_sequence([Expr | Exprs]) -->
+    expression(Expr),
+    !,
+    expression_sequence_tail(Exprs).
+expression_sequence_tail([Expr | Exprs]) -->
+    [';' at _],
+    !,
+    expression(Expr),
+    expression_sequence_tail(Exprs).
+expression_sequence_tail([]) --> [].
+
+expression(PMatch) -->
+    [keyword(match) at Start],
+    !,
+    pattern_matching(Start, Pmatch).
+expression(LetDef) -->
+    [keyword(let) at Start],
+    !,
+    let_definition(Start, LetDef).
+expression(Conditional) -->
+    [keyword(if) at Start],
+    !,
+    conditional_expression(Start, Conditional).
+expression(Tuple) -->
+    tuple_expression(Tuple).
+% TODO: consider changing tuple priority to be
+%       lower than other expression types in 
+%       expression(...) rule
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%         PATTERN MATCHING          %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+pattern_matching(Start, pmatch(Expr, Patterns)) -->
+    expression_top_level(Start, Expr),
+    expected_token(Start, keyword(with), 'with keyword', 'pattern matching'),
+    pattern_matching_cases(Start, Patterns),
+    expected_token(Start, keyword(end), 'end keyword', 'pattern matching').
+
+pattern_matching_cases(Start, [Case | Cases]) -->
+    pattern_matching_case(Start, Case),
+    !,
+    pattern_matching_cases(Start, Cases).
+pattern_matching_cases(_, []) --> [].
+
+pattern_matching_case(Start, '=>'(Pattern, Expr)) -->
+    [keyword(case) at _],
+    pattern(Start, Pattern),
+    expected_token(
+        Start, 
+        operator('=>'), 
+        '=> operator', 
+        'pattern matching case'
+    ),
+    expression_top_level(Start, Expr).
+
+pattern_guard(_, Pattern) -->
+    pattern(Pattern),
+    !.
+pattern_guard(Start, _) -->
+    { throw(error('Syntax error in pattern matching pattern', []) at Start) }.
+
+pattern(Pattern) -->
+    deconstructor_pattern(Left),
+    pattern_tail(Tail),
+    { construct_tuple([Left | Tail], Pattern) }.
+pattern_tail([P | Ps]) -->
+    [',' at _],
+    !,
+    deconstructor_pattern(P),
+    pattern_tail(Ps).
+pattern_tail([]) --> [].
+
+deconstructor_pattern(Pattern) -->
+    atomic_pattern(Pattern),
+    !.
+deconstructor_pattern(Pattern) -->
+    [tid(Constructor) at _],
+    deconstructor_pattern_argument(Constructor, Pattern).
+deconstructor_pattern_argument(Constructor, adt(Constructor, Argument)) -->
+    atomic_pattern(Argument),
+    !.
+deconstructor_pattern_argument(Constructor, Constructor) --> [].
+
+atomic_pattern(Pattern) -->
+    valid_variable_name(Pattern),
+    !.
+atomic_pattern(Pattern) -->
+    ['(' at _],
+    !,
+    pattern(Pattern),
+    [')' at _].
+atomic_pattern(Pattern) -->
+    ['[' at _],
+    !,
+    list_pattern(Pattern).
+atomic_pattern(Const) -->
+    constant(Const).
+
+list_pattern([]) -->
+    [']' at _],
+    !.
+list_pattern([H | T]) -->
+    deconstructor_pattern(H),
+    list_pattern_tail(T).
+list_pattern_tail([H | T]) -->
+    [',' at _],
+    !,
+    deconstructor_pattern(H),
+    list_pattern_tail(T).
+list_pattern_tail([]) -->
+    [']' at _],
+    !.
+list_pattern_tail([Tail]) -->
+    [operator('|') at _],
+    valid_variable_name(Tail).
+    [']' at _].
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
 %             AUXILIARY             %
@@ -330,7 +456,7 @@ construct_tuple(Xs, tuple(N, Tuple)) :-
 construct_with_functor(_, [X], X) :- !.
 construct_with_functor(F, [X | Xs], Result) :-
     construct_with_functor(F, Xs, PrevResult),
-    Result =.. [F, X, Result].
+    Result =.. [F, X, PrevResult].
 
 expected_token(_, TokenVal, _, Pos) -->
     [TokenVal at Pos],
