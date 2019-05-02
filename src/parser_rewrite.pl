@@ -387,13 +387,64 @@ expr_n_rest(_, [], _) --> [].
 
 expr_r(Priority, Expr, Operators) -->
     expr_l(Priority, Lhs, Operators),
-    expr_l_rest(Priority, Rhs, Operators),
+    expr_r_rest(Priority, Rhs, Operators),
     { merge_expr(Lhs, Rhs, Expr) }.
 expr_r_rest(Priority, [Op, Expr], Operators) -->
     operator(Op, Priority, right, _, Operators),
+    !,
     expr_l(Priority, Rhs, Operators),
     expr_r_rest(Priority, ExprRest, Operators),
     { merge_expr(Rhs, ExprRest, Expr) }.
+expr_r_rest(_, [], _) --> [].
+
+expr_l(Priority, Expr, Operators) -->
+    expr_u_r(Priority, Lhs, Operators),
+    expr_l_rest(Priority, Lhs, Expr, Operators).
+expr_l_rest(Priority, Acc, Result, Operators) -->
+    operator(Op, Priority, left, _, Operators),
+    !,
+    expr_u_r(Priority, Rhs, Operators),
+    { NewAcc =.. [Op, Acc, Rhs] },
+    expr_l_rest(Priority, NewAcc, Result, Operators).
+expr_l_rest(_, Acc, Acc, _) --> [].
+
+expr_u_r(Priority, Expr, Operators) -->
+    expr_u_l(Priority, Arg, Operators),
+    expr_u_r_rest(Priority, Arg, Expr, Operators).
+expr_u_r_rest(Priority, Arg, Expr, Operators) -->
+    operator(Op, Priority, right_unary, _, Operators),
+    !,
+    { Expr =.. [Op, Arg] }.
+expr_u_r_rest(_, Arg, Arg, _) --> 
+    [].
+
+expr_u_l(5, Expr, Operators) -->
+    operator(Op, 5, left_unary, _, Operators),
+    !,
+    application(Arg, Operators),
+    { Expr =.. [Op, Arg] }.
+expr_u_l(5, Expr, Operators) -->
+    !,
+    application(Expr, Operators).
+
+expr_u_l(Priority, Expr, Operators) -->
+    operator(Op, Priority, left_unary, _, Operators),
+    !,
+    { N is Priority + 1 },
+    expr_n(N, Arg, Operators),
+    { Expr =.. [Op, Arg] }.
+expr_u_l(Priority, Expr, Operators) -->
+    { N is Priority + 1 },
+    expr_n(N, Expr, Operators).
+
+application(Expr, Operators) -->
+    atomic_expression(Lhs),
+    application_rest(Lhs, Expr, Operators).
+application_rest(Acc, Result, Operators) -->
+    atomic_expression(Arg),
+    !,
+    application_rest(application(Acc, Arg), Result, Operators).
+application_rest(Acc, Acc, _) --> [].
 
 merge_expr(Lhs, [Op, Rhs], Expr) :-
     Expr =.. [Op, Lhs, Rhs],
@@ -413,7 +464,7 @@ conditional_expression(Start, if(Cond, Cons, Alt), Operators) -->
     expression_top_level(Start, Cond, Operators),
     expected_token(Start, keyword(then), 'then keyword', ThenStart),
     expression_top_level(ThenStart, Cons, Operators),
-    conditional_expression_else(Start, Alt).
+    conditional_expression_else(Start, Alt, Operators).
 
 conditional_expression_else(_, unit, _) -->
     [keyword(end) at _],
