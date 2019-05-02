@@ -1,7 +1,7 @@
 import {
     IO
     "file.ax"
-}.
+}
 
 defop $ 0 right.
 

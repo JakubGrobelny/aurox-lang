@@ -70,31 +70,16 @@ file_name_to_import(_, file_name(File) at Pos) -->
     [string(File) at Pos],
     !.
 file_name_to_import(Start, _) -->
-    [Token at Pos],
+    [Token],
     {
         \+ Token = '}',
-        throw_invalid_file_name_token(Token, Pos)
+        throw_invalid_token(
+            'Valid import specifiers are either capitalized module names \c
+             or strings with file names',
+             'import statement',
+             Token)
     },
     !.
-
-throw_invalid_file_name_token(Token, Pos) :-
-    Token =.. [Functor, Value],
-    !,
-    throw(
-        error(
-            'Invalid token ~w of type ~w in import statement.\c 
-             Valid import specifiers are either capitalized module names \c
-             or strings with file names', 
-            [Functor, Value]
-        ) at Pos
-    ).
-throw_invalid_file_name_token(Token, Pos) :-
-    throw(
-        error(
-            'Unexpected token ~w in import statement.'
-             [Token]
-        ) at Pos
-    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -103,24 +88,35 @@ throw_invalid_file_name_token(Token, Pos) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 define_statement(Start, define(Name, Arguments, Type, Value) at Start) -->
-    valid_variable_name(Start, Name),
-    formal_parameters(Start, Arguments),
+    valid_variable_name(Name),
+    !,
+    formal_parameters(Arguments),
     colon(Start),
     type(Type),
     assignment_operator(Start),
     top_level_expression(Start, Value).
+define_statement(Start, _) -->
+    { throw(error('Syntax error in definition', []) at Start) }.
 
-valid_variable_name(_, id(Name)) -->
+valid_variable_name(id(Name)) -->
     [id(Name) at _],
     !.
-valid_variable_name(_, operator(Op)) -->
+valid_variable_name(operator(Op)) -->
     ['(' at _],
     [operator(Op) at _],
-    [')' at _],
-    !.
-valid_variable_name(DefinitionStart, _) -->
-    [Something at Somewhere],
+    [')' at _].
+
+formal_parameters([Param | Params]) -->
+    valid_variable_name(Param),
     !,
+    formal_parameters(Params).
+formal_parameters([]) --> [].
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%              TYPES                %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,17 +125,37 @@ valid_variable_name(DefinitionStart, _) -->
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-peek(Token), [Token] -->
-    [Token].
+assignment_operator(_) -->
+    [operator('=') at _],
+    !.
+assignment_operator(Start) -->
+    { throw(error('Missing expected assignment operator', []) at Start) }.
 
-throw_unexpected_token(Token, Position) :-
-    Token =.. [Type, Value],
+colon(_) -->
+    [':' at _],
+    !.
+colon(Start) -->
+    { throw(error('Missing expected colon', []) at Start) }.
+
+throw_invalid_token(Expected, Context, Token at Pos) :-
+    Token =.. [Functor, Value],
+    !,
     throw(
         error(
-            'Unexpected token ~w of type ~w', 
-            [Value, Type]
-        ) at Position
+            'Invalid token ~w of type ~w in ~w. ~w',
+            [Value, Functor, Context, Expected]
+        ) at Pos
     ).
+throw_invalid_token(Expected, Context, Token at Pos) :-
+    throw(
+        error(
+            'Invalid token ~w in ~w. ~w',
+            [Token, Context, Expected]
+        ) at Pos
+    ).
+
+peek(Token), [Token] -->
+    [Token].
 
 dot_terminator(_) -->
     ['.' at _],
@@ -184,7 +200,7 @@ square_bracket_terminator(Start) -->
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-operator_definition(_, OldOperators, NewOperators) -->
+operator_definition(Start, OldOperators, NewOperators) -->
     [operator(Op) at _],
     [integer(Priority) at PStart],
     [id(Associativity) at AStart},
@@ -199,7 +215,8 @@ operator_definition(_, OldOperators, NewOperators) -->
             OldOperators, 
             NewOperators
         ).
-    }.
+    },
+    dot_terminator(Start).
 operator_definition(Start, _, _) -->
     { throw(error('Syntax error in operator definition', []) at Start) }.
 
