@@ -30,11 +30,6 @@ program([Definition | Program], Operators) -->
     !,
     define_statement(DefineStart, Definition),
     program(Program, Operators).
-program([FunctionDefinition | Program], Operators) -->
-    [keyword(defun) at DefunStart],
-    !,
-    defun_statement(DefunStart, FunctionDefinition),
-    program(Program, Operators).
 program([TypeDefinition | Program], Operators) -->
     [keyword(type) at TypeDefStart],
     !,
@@ -115,11 +110,6 @@ formal_parameters([Param | Params]) -->
     formal_parameters(Params).
 formal_parameters([]) --> [].
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                   %
-%              TYPES                %
-%                                   %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -261,9 +251,86 @@ is_operator_type(Op, Priority, UnaryAssoc, Operators) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
+%              TYPES                %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+type(Type) -->
+    tuple_type(Type).
+
+tuple_type(Type) -->
+    function_type(Left),
+    tuple_type_tail(Rest),
+    { construct_tuple([Left | Rest], Type) }.
+tuple_type_tail([Elem | Tail]) -->
+    [',' at _],
+    !,
+    function_type(Elem),
+    tuple_type_tail(Tail).
+tuple_type_tail([]) --> [].
+
+function_type(Type) -->
+    algebraic_type(Left),
+    function_type_tail(Tail),
+    { construct_with_functor('->', [Left | Tail], Type) }.
+function_type_tail([Type | Types]) -->
+    [operator('->') at _],
+    !,
+    algebraic_type(Type),
+    function_type_tail(Types).
+function_type_tail([]) --> [].
+
+algebraic_type(adt(TypeName, Parameters)) -->
+    [tid(TypeName) at _],
+    !,
+    atomic_type_sequence(Parameters).
+algebraic_type(Atomic) -->
+    atomic_type(Atomic).
+atomic_type_sequence([Type | Types]) -->
+    atomic_type(Type),
+    !,
+    atomic_type_sequence(Types).
+atomic_type_sequence([]) --> [].
+
+atomic_type(param(Id)) -->
+    [id(Id) at _],
+    !.
+atomic_type(name(Name)) -->
+    [tid(Name) at _],
+    !.
+atomic_type(list(Type)) -->
+    ['[' at _],
+    !,
+    type(Type),
+    [']' at _].
+atomic_type(Type) -->
+    ['(' at _],
+    !,
+    type(Type),
+    [')' at _].
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%           EXPRESSIONS             %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
 %             AUXILIARY             %
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+construct_tuple([], undefined) :- !.
+construct_tuple([X], X) :- !.
+construct_tuple(Xs, tuple(N, Tuple)) :-
+    length(Xs, N),
+    construct_with_functor(',', Xs, Tuple).
+
+construct_with_functor(_, [X], X) :- !.
+construct_with_functor(F, [X | Xs], Result) :-
+    construct_with_functor(F, Xs, PrevResult),
+    Result =.. [F, X, Result].
 
 expected_token(_, TokenVal, _, Pos) -->
     [TokenVal at Pos],
