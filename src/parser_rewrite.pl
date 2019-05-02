@@ -404,55 +404,123 @@ expr_l_rest(Priority, Acc, Result, Operators) -->
     operator(Op, Priority, left, _, Operators),
     !,
     expr_u_r(Priority, Rhs, Operators),
-    { NewAcc =.. [Op, Acc, Rhs] },
-    expr_l_rest(Priority, NewAcc, Result, Operators).
+    expr_l_rest(Priority, app(app(Op, Acc), Rhs), Result, Operators).
 expr_l_rest(_, Acc, Acc, _) --> [].
 
 expr_u_r(Priority, Expr, Operators) -->
     expr_u_l(Priority, Arg, Operators),
     expr_u_r_rest(Priority, Arg, Expr, Operators).
-expr_u_r_rest(Priority, Arg, Expr, Operators) -->
+expr_u_r_rest(Priority, Arg, app(Op, Arg), Operators) -->
     operator(Op, Priority, right_unary, _, Operators),
-    !,
-    { Expr =.. [Op, Arg] }.
+    !.
 expr_u_r_rest(_, Arg, Arg, _) --> 
     [].
 
-expr_u_l(5, Expr, Operators) -->
+expr_u_l(5, app(Op, Arg), Operators) -->
     operator(Op, 5, left_unary, _, Operators),
     !,
-    application(Arg, Operators),
-    { Expr =.. [Op, Arg] }.
+    application(Arg, Operators).
 expr_u_l(5, Expr, Operators) -->
     !,
     application(Expr, Operators).
-
-expr_u_l(Priority, Expr, Operators) -->
+expr_u_l(Priority, app(Op, Arg), Operators) -->
     operator(Op, Priority, left_unary, _, Operators),
     !,
     { N is Priority + 1 },
-    expr_n(N, Arg, Operators),
-    { Expr =.. [Op, Arg] }.
+    expr_n(N, Arg, Operators).
 expr_u_l(Priority, Expr, Operators) -->
     { N is Priority + 1 },
     expr_n(N, Expr, Operators).
 
 application(Expr, Operators) -->
-    atomic_expression(Lhs),
+    atomic_expression(Lhs, Operators),
     application_rest(Lhs, Expr, Operators).
 application_rest(Acc, Result, Operators) -->
-    atomic_expression(Arg),
+    atomic_expression(Arg, Operators),
     !,
-    application_rest(application(Acc, Arg), Result, Operators).
+    application_rest(app(Acc, Arg), Result, Operators).
 application_rest(Acc, Acc, _) --> [].
 
-merge_expr(Lhs, [Op, Rhs], Expr) :-
-    Expr =.. [Op, Lhs, Rhs],
+constant(integer(N)) -->
+    [integer(N) at _],
+    !.
+constant(unit) -->
+    ['(' at _],
+    !,
+    [')' at _].
+constant(float(X)) -->
+    [float(X) at _],
+    !.
+constant(string(Str)) -->
+    [string(Str) at _],
+    !.
+constant(char(C)) -->
+    [char(C) at _].
+
+merge_expr(Lhs, [Op, Rhs], app(app(Op, Lhs), Rhs)) :-
     !.
 merge_expr(Lhs, [], Lhs).
 
+lambda(lambda(Params, Expr), Operators) -->
+    ['{' at Start],
+    !,
+    lambda_param_list(Start, Params),
+    expression_top_level(Start, Expr, Operators),
+    expected_token(Start, '}', 'closing curly bracket', _).
+lambda_param_list(Start, Params) -->
+    expected_token(Start, operator('|'), 'lambda parameter list delimiter', _),
+    formal_parameters(Params),
+    expected_token(Start, operator('|'), 'lambda parameter list delimiter', _).
 
-% TODO: 1. lists, 2. unit type
+list_expression(_, list([], []), _) -->
+    [']' at _],
+    !.
+list_expression(Start, list([H | T], Tail), Operators) -->
+    list_element(Start, H, Operators),
+    !,
+    list_expression_tail(Start, list(T, Tail), Operators).
+list_expression_tail(Start, list([], Tail), Operators) -->
+    [operator('|') at _],
+    !,
+    list_element(Start, Tail, Operators),
+    expected_token(Start, ']', 'closing square bracket', _).
+list_expression_tail(Start, list([H | T], Tail), Operators) -->
+    [',' at _],
+    !,
+    list_element(Start, H, Operators),
+    list_expression_tail(Start, list(T, Tail), Operators).
+list_expression_tail(Start, list([], []), _) -->
+    expected_token(Start, ']', 'closing square bracket', _).
+list_element(_, Elem, Operators) -->
+    atomic_expression(Elem, Operators),
+    !.
+list_element(Start, _) -->
+    { throw(error('Syntax error in list literal', []) at Start) }.
+
+atomic_expression(Lambda, Operators) -->
+    lambda(Lambda, Operators),
+    !.
+atomic_expression(Const, _) -->
+    constant(Const),
+    !.
+atomic_expression(constructor(Constructor) ,_) -->
+    [tid(Constructor) at _],
+    !.
+atomic_expression(Var, _) -->
+    valid_variable_name(Var),
+    !.
+atomic_expression(Expr, Operators) -->
+    ['(' at Start],
+    !,
+    expression_top_level(Start, Expr, Operators),
+    expected_token(Start, ')', 'closing parenthesis', _).
+atomic_expression(List, Operators) -->
+    ['[' at Start],
+    !,
+    list_expression(Start, List, Operators).
+
+
+% TODO: 1. lists, 2. unit type 3. lambdas
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -568,21 +636,21 @@ atomic_pattern(Pattern) -->
 atomic_pattern(Const) -->
     constant(Const).
 
-list_pattern([]) -->
+list_pattern(list([], [])) -->
     [']' at _],
     !.
-list_pattern([H | T]) -->
+list_pattern(list([H | T], Tail)) -->
     deconstructor_pattern(H),
-    list_pattern_tail(T).
-list_pattern_tail([H | T]) -->
+    list_pattern_tail(list(T, Tail)).
+list_pattern_tail(list([H | T], Tail)) -->
     [',' at _],
     !,
     deconstructor_pattern(H),
-    list_pattern_tail(T).
-list_pattern_tail([]) -->
+    list_pattern_tail(list(T, Tail)).
+list_pattern_tail(list([], [])) -->
     [']' at _],
     !.
-list_pattern_tail([Tail]) -->
+list_pattern_tail(list([], Tail)) -->
     [operator('|') at _],
     valid_variable_name(Tail).
     [']' at _].
