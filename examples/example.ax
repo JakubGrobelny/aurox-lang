@@ -1,46 +1,81 @@
-import {
+import
     IO
     "file.ax"
-}
+end
 
-defop $ 0 right.
+defop $ 0 right
 
-defun ($) f x : (a -> b) -> a -> b = f x.
+defun ($) f x : (a -> b) -> a -> b = 
+    f x
+end
 
-printf "1 + 2 = ~w" (1 + 2).
+printf "1 + 2 = ~w" (1 + 2)
 
-define π : Float = 3.14.
+define π : Float = 3.14
 
-type Tree : a {
-    Leaf
-    Node { Tree a, a, Tree a }
-}
+define π2 : Float = (2 * π)
 
-define tree_mult_by_π t : Tree Int -> Tree Int =
-    match t {
-        case Leaf => Leaf
-        case Node (l, v, r) => 
-            Node (
-                tree_mult_by_π l, π * v, tree_mult_by_π r
-            )
-    }
-.
+type Tree of a with
+    case Leaf
+    case Node (Tree a, a, Tree a)
+end
 
 define map f xs : (a -> b) -> [a] -> [b] =
-    match xs {
+    match xs with
         case [] => []
         case [x | xs] => [f x | map f xs]
-    }
-.
+    end
+end
+
+define map f xs : (a -> b) -> [a] -> [b] =
+    match xs with
+        case [] => []
+        case [x | xs] => [f x | map f xs]
+    end
+end
 
 define factorial n : Integer -> Integer =
-    match n {
+    match n with
         case 0 => 1
         case _ => n * factorial $ n - 1
-    }
-.
+    end
+end
 
+define first tuple : (a, b) -> a =
+    match tuple with
+        case f, _ => f
+    end
+end
 
-printf "Hello, world" ();
+define second tuple : (a, b) -> a =
+    match tuple with
+        case _, s => s
+    end
+end
+
+# lack of pattern matching in function parameters or let definitions
+define add_tuple tuple : (Integer, Integer) -> Integer =
+    let a : Integer = (first tuple) in
+        let b : Integer = (second tuple) in
+            a + b
+        end
+    end
+end
+        
+# alternative solution to the problem above
+define mult_tuple tuple : (Integer, Integer) -> Integer =
+    match tuple with
+        case (first, second) => first * second
+    end
+end
+
+printf "Hello, world" ()
+
 let square := {|x| x*x} in 
-    map square [1,2,3,4,5,6,7,8].
+    map square [1,2,3,4,5,6,7,8]
+end
+
+if (readint ()) == 10 
+    then printf "10" 
+    else printf "not 10"
+end

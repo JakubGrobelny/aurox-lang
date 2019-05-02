@@ -43,7 +43,7 @@ program([TypeDefinition | Program], Operators) -->
 program([Expression | Program], Operators) -->
     peek(_ at ExprStart),
     !
-    top_level_expression(ExprStart, Expression).
+    expression(ExprStart, Expression).
 program([], _) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,9 +53,8 @@ program([], _) --> [].
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 import_statement(Start, import(Files)) -->
-    curly_bracket(BracketStart, Start),
     list_of_files_to_import(Start, Files),
-    curly_bracket_terminator(BracketStart).
+    expected_token(Start, keyword(end), 'end keyword', _).
 
 list_of_files_to_import(Start, [File | Files]) -->
     file_name_to_import(Start, File),
@@ -72,7 +71,7 @@ file_name_to_import(_, file_name(File) at Pos) -->
 file_name_to_import(Start, _) -->
     [Token],
     {
-        \+ Token = '}',
+        \+ Token = keyword(end) at _,
         throw_invalid_token(
             'Valid import specifiers are either capitalized module names \c
              or strings with file names',
@@ -91,15 +90,19 @@ define_statement(Start, define(Name, Arguments, Type, Value) at Start) -->
     valid_variable_name(Name),
     !,
     formal_parameters(Arguments),
-    colon(Start),
+    expected_token(Start, ':', colon, _),
     type(Type),
-    assignment_operator(Start),
-    top_level_expression(Start, Value).
+    expected_token(Start, operator('='), 'assignment operator', _),
+    expression(Start, Value),
+    expected_token(Start, operator(end), 'end keyword', _).
 define_statement(Start, _) -->
     { throw(error('Syntax error in definition', []) at Start) }.
 
 valid_variable_name(id(Name)) -->
     [id(Name) at _],
+    !.
+valid_variable_name(wildcard) -->
+    [keyword('_') at _],
     !.
 valid_variable_name(operator(Op)) -->
     ['(' at _],
@@ -118,81 +121,78 @@ formal_parameters([]) --> [].
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
-%             AUXILIARY             %
+%        TYPE DEFINITIONS           %
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-assignment_operator(_) -->
-    [operator('=') at _],
-    !.
-assignment_operator(Start) -->
-    { throw(error('Missing expected assignment operator', []) at Start) }.
+type_definition(Start, typedef(Name, Params, Constructors)) -->
+    type_name(Start, Name),
+    type_definition_params(Start, Params),
+    expected_token(Start, with, 'with keyword', _),
+    type_definition_cases(Start, Constructors),
+    expected_token(Start, end, 'end keyword', _).
 
-colon(_) -->
-    [':' at _],
+type_name(_, TypeName) -->
+    [tid(TypeName) at _],
     !.
-colon(Start) -->
-    { throw(error('Missing expected colon', []) at Start) }.
+type_name(Start, _) -->
+    { throw(error('Invalid type name', []) at Start) }.
 
-throw_invalid_token(Expected, Context, Token at Pos) :-
-    Token =.. [Functor, Value],
+type_definition_params(Start, [Param | Params]) -->
+    [id(Param) at _],
     !,
-    throw(
-        error(
-            'Invalid token ~w of type ~w in ~w. ~w',
-            [Value, Functor, Context, Expected]
-        ) at Pos
-    ).
-throw_invalid_token(Expected, Context, Token at Pos) :-
-    throw(
-        error(
-            'Invalid token ~w in ~w. ~w',
-            [Token, Context, Expected]
-        ) at Pos
-    ).
+    type_definition_params(Start, Params).
+type_definition_params(Start, _) -->
+    [Token],
+    !,
+    { 
+        \+ Token = keyword(with) at _,
+        throw_invalid_token(
+            'Type parameters are lowercase identifiers', 
+            'type definition', 
+            Token
+        ) 
+    }.
+type_definition_params(_, []) --> [].
 
-peek(Token), [Token] -->
-    [Token].
-
-dot_terminator(_) -->
-    ['.' at _],
-    !.
-dot_terminator(StatementStart, Where) -->
+type_definition_cases(Start, [Constructor | Constructors]) -->
+    [keyword(case) at CaseStart],    
+    !,
+    type_definition_case(CaseStart, Constructor).
+type_definition_cases(Start, _) -->
+    [Token],
+    !,
     {
-        throw(
-            error(
-                'Missing expected dot terminator after ~w',
-                [Where]
-            ) at StatementStart
+        \+ Token = operator(end) at _,
+        throw_invalid_token(
+            'Type definition cases must start with case keyword',
+            'type definition',
+            Token
         )
     }.
+type_definition_cases(_, []) --> [].
 
-curly_bracket(Position, _) -->
-    ['{' at Position],
-    !.
-curly_bracket(_, Start) -->
-    { throw(error('Missing opening curly bracket', []) at Start) }.
+type_definition_case(CaseStart, constructor(Name, Type)) -->
+    [tid(Name) at _],
+    type_definition_constructor_type(CaseStart, Type).
 
-curly_bracket_terminator(_) -->
-    ['}' at _],
+type_definition_constructor_type(_, Type) -->
+    atomic_type(Type),
     !.
-curly_bracket_terminator(Start) -->
-    { throw(error('Missing expected closing curly bracket', []) at Start) }.
-
-square_bracket(Position, _) -->
-    ['[' at Position],
-    !.
-square_bracket(_, Start) -->
-    { throw(error('Missing opening square bracket', []) at Start) }.
-
-square_bracket_terminator(_) -->
-    [']' at _],
-    !.
-square_bracket_terminator(Start) -->
-    { throw(error('Missing expected closing square bracket', []) at Start) }.
+type_definition_constructor_type(Start, _) -->
+    [Token],
+    !,
+    {
+        \+ Token = operator(case) at _,
+        throw_invalid_token(
+            'Constructor can only be followed by atomic type',
+            'constructor definition',
+            Token
+        )
+    }.
+type_definition_constructor_type(_, undefined) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -215,8 +215,7 @@ operator_definition(Start, OldOperators, NewOperators) -->
             OldOperators, 
             NewOperators
         ).
-    },
-    dot_terminator(Start).
+    }.
 operator_definition(Start, _, _) -->
     { throw(error('Syntax error in operator definition', []) at Start) }.
 
@@ -260,3 +259,34 @@ is_operator_type(Op, Priority, Assoc, Operators) :-
 is_operator_type(Op, Priority, UnaryAssoc, Operators) :-
     get_dict((Op, UnaryAssoc), Operators, (Priority, Assoc)).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%             AUXILIARY             %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+expected_token(_, TokenVal, _, Pos) -->
+    [TokenVal at Pos],
+    !.
+expected_token(Start, _, TokenName _) -->
+    { throw(error('Missing expected ~w.', [TokenName]) at Start) }.
+
+throw_invalid_token(Expected, Context, Token at Pos) :-
+    Token =.. [Functor, Value],
+    !,
+    throw(
+        error(
+            'Invalid token ~w of type ~w in ~w. ~w',
+            [Value, Functor, Context, Expected]
+        ) at Pos
+    ).
+throw_invalid_token(Expected, Context, Token at Pos) :-
+    throw(
+        error(
+            'Invalid token ~w in ~w. ~w',
+            [Token, Context, Expected]
+        ) at Pos
+    ).
+
+peek(Token), [Token] -->
+    [Token].

@@ -138,7 +138,8 @@ classify_token(Atom, keyword(Atom)) :-
             let, and, in, if, 
             then, match, else, 
             with, type, import, 
-            define, '_', defop
+            define, '_', defop, 
+            end, case
         ]
     ),
     !.
