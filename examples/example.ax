@@ -83,3 +83,19 @@ if (readint ()) == 10
     then printf "10" 
     else printf "not 10"
 end
+
+defop |> left 1
+
+define (|>) x f :=
+    f x
+end
+
+define flip f a b :=
+    f b a 
+end
+
+defop · left 3
+
+define apply (·) a1 a2 :=
+    a1 · a2
+end
