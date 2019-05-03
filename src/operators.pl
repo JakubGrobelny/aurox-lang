@@ -2,8 +2,8 @@
 
 replace_functor([], _, []) :- !.
 replace_functor([X | Xs], F, [Y | Ys]) :-
-    X =.. [_, L, R],
-    Y =.. [F, L , R],
+    X =.. [_ | Args],
+    Y =.. [F | Args],
     replace_functor(Xs, F, Ys).
 
 merge_operators(ops(I0, P0), ops(I1, P1), ops(I2, P2)) :-

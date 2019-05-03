@@ -1,5 +1,10 @@
 import
     "tests/3"
+    "tests/21"
 end
 
 a%
+
+import
+    "tests/3"
+end

@@ -5,8 +5,7 @@ parse_file(FileName, AST) :-
     parse_file(FileName, AST, pos(FileName,0,0), [], _, _).
 
 parse_file(FileName, AST, Start, Imported, NewDeps, NewOperators) :-
-    % TODO: add file opening error handling
-    tokenize_file(FileName, Tokens),
+    tokenize_file(FileName, Tokens, Start),
     empty_operator_list(Operators),
     catch(
         phrase(
@@ -14,7 +13,7 @@ parse_file(FileName, AST, Start, Imported, NewDeps, NewOperators) :-
                 AST, 
                 Operators, 
                 NewOperators, 
-                [file_name(FileName) at Start | Imported],
+                [file_name(FileName) | Imported],
                 NewDeps
             ), 
             Tokens
@@ -539,9 +538,6 @@ atomic_expression(List, Operators) -->
     ['[' at Start],
     !,
     list_expression(Start, List, Operators).
-
-
-% TODO: 1. lists, 2. unit type 3. lambdas
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %

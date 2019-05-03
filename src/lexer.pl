@@ -1,4 +1,4 @@
-:- [utility].
+:- ensure_loaded(utility).
 
 char_codes_to_atoms([], []) :-
     !.
@@ -6,8 +6,16 @@ char_codes_to_atoms([Char | Chars], [Atom | Atoms]) :-
     char_code(Atom, Char),
     char_codes_to_atoms(Chars, Atoms).
 
-tokenize_file(FileName, Tokens) :-
-    open(FileName, read, Stream),
+tokenize_file(FileName, Tokens, WhereImported) :-
+    catch(
+        open(FileName, read, Stream),
+        _,
+        print_error_and_halt(
+            WhereImported, 
+            'unable to open file ~w', 
+            [FileName]
+        )
+    ),
     read_string(Stream, "", "", _, String),
     close(Stream),
     string_to_list(String, ListOfChars),
