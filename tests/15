@@ -1,0 +1,4 @@
+defop + 10 left
+defop * 15 left
+
+a+b*c

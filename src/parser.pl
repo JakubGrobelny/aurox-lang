@@ -4,7 +4,7 @@ parse_file(FileName, AST) :-
     tokenize_file(FileName, Tokens),
     empty_operator_list(Operators),
     catch(
-        phrase(program(AST, Operators), Tokens),
+        phrase(program(AST, Operators, _), Tokens),
         error(Format, Args) at Pos,
         print_error(Pos, Format, Args)
     ).
@@ -15,32 +15,32 @@ parse_file(FileName, AST) :-
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-program(Program, OldOperators) -->
+program(Program, OldOperators, FinalOperators) -->
     [keyword(defop) at DefOpStart],
     !,
     operator_definition(DefOpStart, OldOperators, NewOperators),
-    program(Program, NewOperators).
-program([Import | Program], Operators) -->
+    program(Program, NewOperators, FinalOperators).
+program([Import | Program], Operators, Operators) -->
     [keyword(import) at ImportStart],
     !,
     import_statement(ImportStart, Import),
-    program(Program, Operators).
-program([Definition | Program], Operators) -->
+    program(Program, Operators, Operators).
+program([Definition | Program], Operators, Operators) -->
     [keyword(define) at DefineStart],
     !,
     define_statement(DefineStart, Definition, Operators),
-    program(Program, Operators).
-program([TypeDefinition | Program], Operators) -->
+    program(Program, Operators, Operators).
+program([TypeDefinition | Program], Operators, Operators) -->
     [keyword(type) at TypeDefStart],
     !,
     type_definition(TypeDefStart, TypeDefinition),
-    program(Program, Operators).
-program([Expression | Program], Operators) -->
+    program(Program, Operators, Operators).
+program([Expression | Program], Operators, Operators) -->
     peek(_ at ExprStart),
     !,
     expression_top_level(ExprStart, Expression, Operators),
-    program(Program, Operators).
-program([], _) --> [].
+    program(Program, Operators, Operators).
+program([], Operators, Operators) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -224,7 +224,7 @@ operator(Op, Priority, Assoc, Pos, Ops, NOps) -->
 define_operator_if_needed(Op, Priority, Assoc, Ops, Ops) :-
     is_operator_type(Op, Priority, Assoc, Ops),
     !.
-define_operator_if_needed(Op, _, Assoc, ops(I, P), NOps) :-
+define_operator_if_needed(Op, 10, Assoc, ops(I, P), NOps) :-
     member(Assoc, [left, none, right]),
     \+ get_dict(Op, I, _),
     \+ get_dict(Op, P, _),
