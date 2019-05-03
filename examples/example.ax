@@ -19,7 +19,7 @@ define π2 : Float =
     2 * π 
 end
 
-type Tree of a with
+type Tree a with
     case Leaf
     case Node (Tree a, a, Tree a)
 end

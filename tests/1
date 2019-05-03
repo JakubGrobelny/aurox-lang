@@ -1,0 +1,17 @@
+
+define one : Integer = 1 end
+
+define two := 
+    one + one
+end
+
+type Tree a with
+    case Leaf
+    case Node (Tree a, a, Tree a)
+end
+
+type Enum with
+    case One
+    case Two
+    case Three
+end

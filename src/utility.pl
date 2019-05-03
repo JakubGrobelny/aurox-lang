@@ -3,8 +3,8 @@ print_error(pos(FileName, L, C), MessageFormat, MessageArgs) :-
         ['~w:~w:~w \u001b[31;1merror:\x1B[0m ', MessageFormat, '\n'],
         FinalFormat
     ),
-    format(FinalFormat, [FileName, L, C | MessageArgs]),
-    halt.
+    format(FinalFormat, [FileName, L, C | MessageArgs]).
+    % halt.
 
 get_nth([X | Xs], 0, X, Xs) :-
     !.

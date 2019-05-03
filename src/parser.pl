@@ -1,426 +1,221 @@
 :- [lexer].
-% :- op(1200,xfx,==>).
 
 parse_file(FileName, AST) :-
     tokenize_file(FileName, Tokens),
-    empty_operator_list(Ops),
+    empty_operator_list(Operators),
     catch(
-        phrase(program(AST, Ops), Tokens), 
-        error(Format, Args) at Pos, 
+        phrase(program(AST, Operators), Tokens),
+        error(Format, Args) at Pos,
         print_error(Pos, Format, Args)
     ).
-parse_file(FileName, AST) 
-program(Program, Operators) -->
-    [keyword(defop) at Pos],
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%         MAIN PARSER RULES         %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+program(Program, OldOperators) -->
+    [keyword(defop) at DefOpStart],
     !,
-    operator_definition(Pos, Operators, NewOperators),
+    operator_definition(DefOpStart, OldOperators, NewOperators),
     program(Program, NewOperators).
-program([Expr | Program], Operators) -->
-    defexpr(Expr, Operators), 
-    rest_of_program(Program, Operators).
-rest_of_program([Expr | Exprs], Operators) -->
-    defexpr(Expr, Operators),
+program([Import | Program], Operators) -->
+    [keyword(import) at ImportStart],
     !,
-    rest_of_program(Exprs, Operators).
-rest_of_program([], _) --> [].
+    import_statement(ImportStart, Import),
+    program(Program, Operators).
+program([Definition | Program], Operators) -->
+    [keyword(define) at DefineStart],
+    !,
+    define_statement(DefineStart, Definition, Operators),
+    program(Program, Operators).
+program([TypeDefinition | Program], Operators) -->
+    [keyword(type) at TypeDefStart],
+    !,
+    type_definition(TypeDefStart, TypeDefinition),
+    program(Program, Operators).
+program([Expression | Program], Operators) -->
+    peek(_ at ExprStart),
+    !,
+    expression_top_level(ExprStart, Expression, Operators),
+    program(Program, Operators).
+program([], _) --> [].
 
-defexpr(Definition, Operators) -->
-    [keyword(define) at Start],
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%          FILE IMPORTS             %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+import_statement(Start, import(Files)) -->
+    list_of_files_to_import(Start, Files),
+    expected_token(Start, keyword(end), 'end keyword', _).
+
+list_of_files_to_import(Start, [File | Files]) -->
+    file_name_to_import(Start, File),
     !,
-    define(Definition, Operators, Start).
-defexpr(Definition, Operators) -->
-    [keyword(defun) at Start],
-    !,
-    defun(Definition, Operators, Start).
-defexpr(TypeDef, Operators) -->
-    [keyword(type) at Start],
-    !,
-    typedef(TypeDef, Operators, Start).
-defexpr(Import, _) -->
-    [keyword(import) at Start],
-    !,
-    import(Import, Start).
-defexpr(Expr, Operators) -->
-    expr(Expr, Operators),
+    list_of_files_to_import(Start, Files).
+list_of_files_to_import(_, []) --> [].
+
+file_name_to_import(_, module_name(Module) at Pos) -->
+    [tid(Module) at Pos],
     !.
-defexpr(_, _) -->
-    [Something at Pos],
-    { 
-        throw(
-            error(
-                'Invalid expression or statement starting with ~w', 
-                [Something]
-            ) at Pos
-        ) 
-    }.
-
-typedef(typedef(Name, Parameters, Constructors), _, Start) -->
-    typedef_name(Name, Start),
-    typedef_params(Parameters, Start),
-    curly_bracket(BracketStart, Start),
-    typedef_constructors(Constructors, Start),
-    curly_bracket_terminator(BracketStart).
-
-typedef_constructors([constructor(Name, Type) | Constructors], Start) -->
-    [tid(Name) at _],
-    !,
-    typedef_constructor_type(Type),
-    typedef_constructors(Constructors, Start).
-typedef_constructors([]) --> [].
-
-typedef_constructor_type(Type) -->
-    ['{' at BracketStart],
-    !,
-    type(Type at _),
-    curly_bracket_terminator(BracketStart).
-typedef_constructor_type([]) --> [].
-
-typedef_params(Params, Start) -->
-    [':' at _],
-    !,
-    typedef_params_list(Params, Start).
-typedef_params([], _) --> [].
-
-typedef_params_list([Param | Tail], _) -->
-    [id(Param) at _],
-    typedef_params_list_tail(Tail).
-typedef_params_list(_, Start) -->
-    { throw(error('Invalid type parameter', []) at Start) }.
-typedef_params_list_tail([Param | Tail], _) -->
-    [id(Param) at _],
-    typedef_params_list_tail(Tail).
-typedef_params_list_tail([]) --> [].
-
-typedef_name(Name, _) -->
-    [tid(Name) at _],
+file_name_to_import(_, file_name(File) at Pos) -->
+    [string(File) at Pos],
     !.
-typedef_name(_, Start) -->
+file_name_to_import(_, _) -->
+    [Token],
+    {
+        \+ Token = keyword(end) at _,
+        throw_invalid_token(
+            'Valid import specifiers are either capitalized module names \c
+             or strings with file names',
+             'import statement',
+             Token)
+    },
+    !.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%              DEFINE               %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+define_statement(Start, define(Name, Arguments, Type, Value) at Start, Ops) -->
+    valid_variable_name(Name),
+    !,
+    formal_parameters(Arguments),
+    expected_token(Start, ':', colon, _),
+    type(Type),
+    expected_token(Start, op('='), 'assignment operator', _),
+    expression_top_level(Start, Value, Ops),
+    expected_token(Start, keyword(end), 'end keyword', _).
+define_statement(Start, _, _) -->
+    { throw(error('Syntax error in definition', []) at Start) }.
+
+valid_variable_name(id(Name)) -->
+    [id(Name) at _],
+    !.
+valid_variable_name(wildcard) -->
+    [keyword('_') at _],
+    !.
+valid_variable_name(op(Op)) -->
+    ['(' at _],
+    [op(Op) at _],
+    [')' at _].
+
+formal_parameters([Param | Params]) -->
+    valid_variable_name(Param),
+    !,
+    formal_parameters(Params).
+formal_parameters([]) --> [].
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%        TYPE DEFINITIONS           %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+type_definition(Start, typedef(Name, Params, Constructors)) -->
+    type_name(Start, Name),
+    type_definition_params(Start, Params),
+    expected_token(Start, keyword(with), 'with keyword', _),
+    type_definition_cases(Start, Constructors),
+    expected_token(Start, keyword(end), 'end keyword', _).
+
+type_name(_, TypeName) -->
+    [tid(TypeName) at _],
+    !.
+type_name(Start, _) -->
     { throw(error('Invalid type name', []) at Start) }.
 
-defun(defun(Name, Args, Type, Body) at Pos, Operators, Pos) -->
-    argument_sequence([Name | Args]), 
+type_definition_params(Start, [Param | Params]) -->
+    [id(Param) at _],
     !,
-    defun_rest(Type, Body, Pos, Operators).
-defun(_, _, Start) -->
-    { throw(error('Missing name in function definition', []) at Start) }.
-
-defun_rest(Type, Body, Start, Operators) -->
-    [':' at _],
-    type(Type),
-    ['=' at _],
-    !,
-    curly_bracket(BracketStart, Start),
-    expr(Body, Operators),
-    curly_bracket_terminator(BracketStart).
-defun_rest(_, _, Start, _) -->
-    { throw(error('Missing ":=" in function definition', []) at Start) }.
-
-var_name(Arg) -->
-    ['(' at _],
-    !,
-    [operator(Arg) at _],
-    [')' at _].
-var_name(Arg) -->
-    [id(Arg) at _].
-
-argument_sequence([Arg | Tail]) -->
-    var_name(Arg),
-    argument_sequence_tail(Tail).
-argument_sequence_tail([Arg | Tail]) -->
-    var_name(Arg),
-    !,
-    argument_sequence_tail(Tail).
-argument_sequence_tail([]) --> [].
-
-import(import(Files), Start) -->
-    curly_bracket(_, Start),
-    !,
-    files_to_import(Files),
-    curly_bracket_terminator(Start).
-
-files_to_import([File at Pos | Files]) -->
-    [tid(File) at Pos],
-    !,
-    files_to_import(Files).
-files_to_import([File at Pos | Files]) -->
-    [string(File) at Pos],
-    !,
-    files_to_import(Files).
-files_to_import([]) --> [].
-
-define(define(Sig, Val) at Pos, Operators, Pos) -->
-    signature(Sig),
-    !,
-    curly_bracket(Start, Pos),
-    bracketed_expr(Val, Operators, Start).
-define(_, _, Start) -->
-    { throw(error('Invalid value signature in definition', []) at Start) }.
-
-signature(sig(Name, Type)) -->
-    var_name(Name),
-    [':' at _],
-    !,
-    signature_tail(Type).
-signature_tail([]) -->
-    [operator('=') at _],
-    !.
-signature_tail(Type) -->
-    type(Type),
-    [operator('=') at _].
-
-bracketed_expr(Expr, Operators, Start) -->
-    expr(Expr, Operators),
-    curly_bracket_terminator(Start).
-
-curly_bracket(Position, _) -->
-    ['{' at Position],
-    !.
-curly_bracket(_, Start) -->
-    { throw(error('Missing opening curly bracket', []) at Start) }.
-
-curly_bracket_terminator(_) -->
-    ['{' at _],
-    !.
-curly_bracket_terminator(Start) -->
-    { throw(error('Curly bracket not terminated properly', []) at Start) }.
-
-expr(IfElse, Operators) -->
-    [keyword(if) at Start],
-    !,
-    if_else(Start, IfElse, Operators).
-expr(PMatch, Operators) -->
-    [keyword(match) at Start],
-    !,
-    pattern_matching(Start, PMatch, Operators).
-expr(LetDef at Start, Operators) -->
-    [keyword(let) at Start],
-    !,
-    let_definition(Start, LetDef, Operators).
-expr(sequence(Head, Tail), Operators) -->
-    tuple(Head),
-    !,
-    expr_seq(Tail, Operators).
-
-operator_kind(Op, Pos, Priority, Assoc, Operators) -->
-    [operator(Op) at Pos],
-    { is_operator_type(Op, Priority, Assoc, Operators) }.
-
-tuple(Expr, Operators) -->
-    w0n(LExpr, Operators),
-    tuple_tail(Rest, Operators),
-    {
-        (Rest = []) -> 
-            Expr = LExpr;
-            Expr = tuple(LExpr, Rest)
-    }.
-tuple_tail(Expr, Operators) -->
-    [',' at _],
-    !,
-    tuple(Expr, Operators).
-tuple_tail([], _) --> [].
-
-w0n(Expr, Operators) -->
-    w0r(E1, Operators),
-    w0n__(E1, Expr).
-w0n__(Acc, Res) -->
-    operator_kind(Op, _, 0, none, Operators),
-    !,
-    w0r(E1, Operators),
-    { NewAcc =.. [application, Op, Acc, E1] },
-    w0n__(NewAcc, Res).
-w0n__(Acc, Acc) --> [].
-
-% TODO: decide how to deal with right associative operators
-
-
-let_definition(Start, let_definition(Sig, Val, In) at Start, Ops) -->
-    signature(Sig),
-    expr(Val, Ops),
-    !,
-    let_definition_in_expr(Start, In, Ops).
-let_definition(Start, _, _) -->
-    { throw(error('Ill formed let definition', []) at Start) }.
-
-let_definition_in_expr(Start, In, Ops) -->
-    [keyword(in) at _],
-    !,
-    curly_bracket(CurlyBracketStart, Start),
-    bracketed_expr(In, Ops, CurlyBracketStart).
-let_definition_in_expr(Start, _, _) -->
-    { throw(error('Missing in keyword in let definition', []) at Start) }.
-
-expr_seq([Expr | Exprs], Operators) -->
-    [';' at _],
-    !,
-    expr(Expr, Operators),
-    expr_seq(Exprs, Operators).
-expr_seq([], _) --> [].
-
-pattern_matching(Start, pmatch(Expr, Patterns) at Start, Operators) -->
-    expr(Expr, Operators),
-    !,
-    curly_bracket(BracketStart, _),
-    pattern_cases(Patterns, Operators),
-    curly_bracket_terminator(BracketStart).
-pattern_matching(Start, _, _) -->
-    { throw(error('Invalid pattern matching expression', []) at Start) }.
-
-pattern_cases([Pattern at Start | Patterns], Operators) -->
-    [keyword(case) at Start],
-    !,
-    pattern_case(Pattern, Start, Operators),
-    pattern_cases(Patterns, Operators).
-pattern_cases([]) --> [].
-
-pattern_case(pattern_case(Pattern, Expr) at Pos, Pos, Operators) -->
-    guarded_pattern(Pattern, Pos),
-    !,
-    pattern_arrow(Pos),
-    pattern_expr(Expr, Pos, Operators).
-pattern_case(_, Pos, _) -->
-    { throw(error('Invalid pattern in pattern matching case', []) at Pos) }.
-
-pattern_arrow(_) -->
-    [operator('=>') at _],
-    !.
-pattern_arrow(Pos) -->
-    { throw(error('Missing => operator in pattern matching case', []) at Pos) }.
-
-pattern_expr(Expr, _, Operators) -->
-    expr(Expr, Operators),
-    !.
-pattern_expr(_, Pos, _) -->
-    { throw(error('Invalid expression in pattern matching', []) at Pos) }.
-
-guarded_pattern(Pattern at Start, Start) -->
-    pattern(Pattern),
-    !.
-guarded_pattern(_, Start) -->
-    { throw(error('Invalid pattern in pattern matching', []) at Start) }.
-
-pattern(Pattern) -->
-    atomic_pattern(Pattern),
-    !.
-pattern(Pattern) -->
-    deconstructor_pattern(Pattern),
-    !.
-
-atomic_pattern(Name) -->
-    var_name(Name),
-    !.
-atomic_pattern(Pattern) -->
-    ['[' at _],
-    !,
-    list_pattern(Pattern).
-atomic_pattern(Pattern) -->
-    ['(' at _],
-    !,
-    tuple_pattern(Pattern),
-    [')' at _].
-atomic_pattern(Const) -->
-    pattern_constant(Const),
-    !.
-
-deconstructor_pattern(Deconstructor) -->
-    [tid(Constructor) at _],
-    deconstructor_pattern_args(Constructor, Deconstructor).
-
-deconstructor_pattern_args(Constructor, deconstructor(Constructor, Arg)) -->
-    atomic_pattern(Arg),
-    !.
-deconstructor_pattern_args(Constructor, deconstructor(Constructor)) --> [].
-
-tuple_pattern(tuple([Pattern | Tail])) -->
-    pattern(Pattern),
-    tuple_pattern_tail(Tail).
-
-tuple_pattern_tail([Pattern | Tail]) -->
-    [',' at _],
-    !,
-    pattern(Pattern),
-    tuple_pattern_tail(Tail).
-tuple_pattern_tail([]) -->
-    [].
-
-list_pattern([]) -->
-    [']' at _],
-    !.
-list_pattern([Elements | Tail]) -->
-    tuple_pattern(tuple(Elements)),
-    list_pattern_tail(Tail),
-    [']' at _].
-
-list_pattern_tail(Name) -->
-    [operator('|') at _],
-    !,
-    var_name(Name).
-list_pattern_tail([]) --> [].
-
-pattern_constant(integer(C)) -->
-    [integer(C) at _],
-    !.
-pattern_constant(float(C)) -->
-    [float(C) at _],
-    !.
-pattern_constant(string(C)) -->
-    [string(C) at _],
-    !.
-pattern_constant(char(C)) -->
-    [char(C) at _],
-    !.
-pattern_constant(unit) -->
-    unit_literal(_).
-
-unit_literal(unit at Pos) -->
-    ['(' at Pos],
-    [')' at _].
-
-if_else(_, if(Condition, Consequence, Alternative), Operators) -->
-    expr(Condition, Operators),
-    if_consequence(Pos, Consequence, Operators),
-    if_alternative(Pos, Alternative, Operators),
-    !.
-if_else(Pos, _, _) -->
-    { throw(error('Syntax error in if-then-else expression', []) at Pos) }.
-
-if_consequence(_, Consequence, Ops) -->
-    [keyword(then) at _],
-    !,
-    expr(Consequence, Ops).
-if_consequence(Pos, _, _) -->
+    type_definition_params(Start, Params).
+type_definition_params(_, _) -->
+    peek(Token),
     { 
-        throw(error('Missing "then" in if-then-else expression', []) at Pos) 
+        \+ Token = keyword(with) at _,
+        !,
+        throw_invalid_token(
+            'Type parameters are lowercase identifiers', 
+            'type definition', 
+            Token
+        ) 
     }.
+type_definition_params(_, []) --> [].
 
-if_alternative(_, Alternative, Ops) -->
-    [keyword(else) at _],
+type_definition_cases(Start, [Constructor | Constructors]) -->
+    [keyword(case) at CaseStart],
     !,
-    expr(Alternative, Ops).
-if_alternative(Pos, _, _) -->
+    type_definition_case(CaseStart, Constructor),
+    type_definition_cases(Start, Constructors).
+type_definition_cases(_, _) -->
+    peek(Token),
     {
-        throw(error('Missing "else" in if-then-else expression', []) at Pos)
+        \+ Token = op(end) at _,
+        \+ Token = keyword(end) at _,
+        !,
+        throw_invalid_token(
+            'Type definition cases must start with case keyword',
+            'type definition',
+            Token
+        )
     }.
+type_definition_cases(_, []) --> [].
 
-operator_definition(_, PrevOperators, NewOperators) -->
-    ['{' at _],
-    [operator(Op) at _],
-    [integer(Priority) at PriorityPos],
-    [id(Associativity) at AssocPos],
-    ['}' at _],
+type_definition_case(CaseStart, constructor(Name, Type)) -->
+    [tid(Name) at _],
+    type_definition_constructor_type(CaseStart, Type).
+
+type_definition_constructor_type(_, Type) -->
+    atomic_type(Type),
+    !.
+type_definition_constructor_type(_, _) -->
+    peek(Token),
     {
-        valid_priority(Priority, PriorityPos),
-        valid_associativity(Associativity, AssocPos),
+        \+ Token = keyword(case) at _,
+        \+ Token = keyword(end) at _,
+        !,
+        throw_invalid_token(
+            'Constructor can only be followed by atomic type',
+            'constructor definition',
+            Token
+        )
+    }.
+type_definition_constructor_type(_, undefined) --> [].
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%        OPERATOR DEFINITIONS       %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+operator_definition(_, OldOperators, NewOperators) -->
+    [op(Op) at _],
+    [int(Priority) at PStart],
+    [id(Associativity) at AStart],
+    !,
+    {
+        valid_priority(Priority, PStart),
+        valid_associativity(Associativity, AStart),
         update_operators(
             Op, 
             Priority, 
             Associativity, 
-            PrevOperators, 
+            OldOperators, 
             NewOperators
         )
-    },
-    !.
-operator_definition(Pos, _, _) -->
-    { throw(error('Syntax error in operator definition', []) at Pos) }.
+    }.
+operator_definition(Start, _, _) -->
+    { throw(error('Syntax error in operator definition', []) at Start) }.
+
+op(Priority, Assoc, Op, Pos, Ops) -->
+    [op(Op) at Pos],
+    { is_operator_type(Op, Priority, Assoc, Ops) }.
 
 valid_priority(N, _) :-
     member(N, [0,1,2,3,4,5]),
@@ -434,54 +229,116 @@ valid_associativity(Assoc, _) :-
     member(Assoc, [left, right, none, left_unary, right_unary]),
     !.
 valid_associativity(Assoc, Pos) :-
-    atomic_list_concat(
-        ['Invalid operator associativity type ~w in operator declaration.',
-         'Allowed types are left, right, none, left_unary and right_unary'], 
-        ErrorMessage
-    ),
-    throw(error(ErrorMessage, [Assoc]) at Pos).
+    throw(
+        error(
+            'Invalid operator associativity type ~w in operator declaration.\c,
+             Allowed types are left, right, none, left_unary and right_unary', 
+            [Assoc]
+        ) at Pos
+    ).
+
+empty_operator_list(ops(Infix, Postfix, Prefix)) :-
+    dict_create(Infix, infix, []),
+    dict_create(Postfix, postfix, []),
+    dict_create(Prefix, prefix, []).
+
+infix(Assoc) :-
+    member(Assoc, [left, right, none]).
+
+update_operators(
+    Op, 
+    Priority, 
+    Assoc, 
+    ops(Infix, Postfix, Prefix), 
+    ops(NewInfix, Postfix, Prefix)
+) :-
+    infix(Assoc),
+    !,
+    put_dict(Op, Infix, (Priority, Assoc), NewInfix).
+update_operators(
+    Op, 
+    Priority, 
+    left_unary, 
+    ops(Infix, Postfix, Prefix), 
+    ops(Infix, Postfix, NewPrefix)
+) :-
+    !,
+    put_dict(Op, Prefix, Priority, NewPrefix).
+update_operators(
+    Op, 
+    Priority, 
+    right_unary, 
+    ops(Infix, Postfix, Prefix), 
+    ops(Infix, NewPostfix, Prefix)
+) :-
+    put_dict(Op, Postfix, Priority, NewPostfix).
+
+is_operator_type(Op, Priority, Assoc, ops(Infix, _, _)) :-
+    member(Assoc, [left, right, none]),
+    !,
+    get_dict(Op, Infix, (Priority, Assoc)).
+is_operator_type(Op, Priority, left_unary, ops(_, _, Prefix)) :-
+    !,
+    get_dict(Op, Prefix, Priority).
+is_operator_type(Op, Priority, right_unary, ops(_, Postfix, _)) :-
+    !,
+    get_dict(Op, Postfix, Priority).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%              TYPES                %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 type(Type) -->
-    function_type(Left at Start),
-    type_tail(Left, Type, Start).
-type_tail(Left, tuple_type(Left, Right) at Start, Start) -->
+    tuple_type(Type),
+    !.
+type(undefined) --> [].
+
+tuple_type(Type) -->
+    function_type(Left),
+    tuple_type_tail(Rest),
+    { construct_tuple([Left | Rest], Type) }.
+tuple_type_tail([Elem | Tail]) -->
     [',' at _],
     !,
-    type(Right).
-type_tail(Left, Left) --> [].
+    function_type(Elem),
+    tuple_type_tail(Tail).
+tuple_type_tail([]) --> [].
 
 function_type(Type) -->
     algebraic_type(Left),
-    function_type_tail(Left, Type).
-function_type_tail(Left, function_type(Left, Right) at Pos) -->
-    [operator('->') at Pos],
+    function_type_tail(Tail),
+    { construct_with_functor('->', [Left | Tail], Type) }.
+function_type_tail([Type | Types]) -->
+    [op('->') at _],
     !,
-    function_type(Right).
-function_type_tail(Left, Left) --> [].
+    algebraic_type(Type),
+    function_type_tail(Types).
+function_type_tail([]) --> [].
 
-algebraic_type(Atomic) -->
-    atomic_type(Atomic),
-    !.
-algebraic_type(adt(Type, Parameters) at Pos) -->
-    [tid(Type) at Pos],
+algebraic_type(adt(TypeName, Parameters)) -->
+    [tid(TypeName) at _],
+    !,
     atomic_type_sequence(Parameters).
-
-atomic_type_sequence([Head | Tail]) -->
-    atomic_type(Head),
+algebraic_type(Atomic) -->
+    atomic_type(Atomic).
+atomic_type_sequence([Type | Types]) -->
+    atomic_type(Type),
     !,
-    atomic_type_sequence(Tail).
+    atomic_type_sequence(Types).
 atomic_type_sequence([]) --> [].
 
-atomic_type(param(Id) at Pos) -->
-    [id(Id) at Pos],
+atomic_type(param(Id)) -->
+    [id(Id) at _],
     !.
-atomic_type(type_name(Name) at Pos) -->
-    [tid(Name) at Pos],
+atomic_type(name(Name)) -->
+    [tid(Name) at _],
     !.
-atomic_type(list(Type) at Start) -->
-    ['[' at Start],
+atomic_type(list(Type)) -->
+    ['[' at _],
     !,
-    type(Type at _),
+    type(Type),
     [']' at _].
 atomic_type(Type) -->
     ['(' at _],
@@ -489,23 +346,382 @@ atomic_type(Type) -->
     type(Type),
     [')' at _].
 
-empty_operator_list(D) :-
-    dict_create(D, ops, []).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%           EXPRESSIONS             %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-update_operators(Op, Priority, Assoc, Ops, NewOps) :-
-    put_dict(Op, Ops, (Priority, Assoc), NewOps).
-
-get_operators(OpsDict, Priority, Assoc, MatchingOperators) :-
-    dict_pairs(OpsDict, _, Ops),
-    filter_operators(Ops, Priority, Assoc, MatchingOperators).
-
-filter_operators([], _, _, []) :-
+expression_top_level(Start, Expr at Start, Operators) -->
+    expression_sequence(Expr, Operators),
     !.
-filter_operators([Op-(Priority, Assoc) | Ops], Priority, Assoc, [Op | OpT]) :-
-    !,
-    filter_operators(Ops, Priority, Assoc, OpT).
-filter_operators([_ | Ops], Priority, Assoc, Filtered) :-
-    filter_operators(Ops, Priority, Assoc, Filtered).
+expression_top_level(Start, _, _) -->
+    { throw(error('Syntax error in expression', []) at Start) }.
 
-is_operator_type(Op, Priority, Assoc, Operators) :-
-    get_dict(Op, Operators, (Priority, Assoc)).
+expression_sequence([Expr | Exprs], Operators) -->
+    expression(Expr, Operators),
+    !,
+    expression_sequence_tail(Exprs, Operators).
+expression_sequence_tail([Expr | Exprs], Operators) -->
+    [';' at _],
+    !,
+    expression(Expr, Operators),
+    expression_sequence_tail(Exprs, Operators).
+expression_sequence_tail([], _) --> [].
+
+expression(PMatch, Operators) -->
+    [keyword(match) at Start],
+    !,
+    pattern_matching(Start, PMatch, Operators).
+expression(LetDef, Operators) -->
+    [keyword(let) at Start],
+    !,
+    let_definition(Start, LetDef, Operators).
+expression(Conditional, Operators) -->
+    [keyword(if) at Start],
+    !,
+    conditional_expression(Start, Conditional, Operators).
+expression(Tuple, Operators) -->    
+    tuple_expression(Tuple, Operators).
+% TODO: consider changing tuple priority to be
+%       lower than other expression types in 
+%       expression(...) rule
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%       ARITHMETIC EXPRESSIONS      %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+tuple_expression(Expr, Operators) -->
+    expr_n(0, Lhs, Operators),
+    tuple_expression_tail(Rhs, Operators),
+    { construct_tuple([Lhs | Rhs], Expr) }.
+tuple_expression_tail([Expr | Exprs], Operators) -->
+    [',' at _],
+    !,
+    expr_n(0, Expr, Operators),
+    tuple_expression_tail(Exprs, Operators).
+tuple_expression_tail([], _) --> [].
+
+expr_n(Priority, Expr, Operators) -->
+    expr_r(Priority, Lhs, Operators),
+    expr_n_rest(Priority, Rhs, Operators),
+    { merge_expr(Lhs, Rhs, Expr) }.
+expr_n_rest(Priority, [Op, Rhs], Operators) -->
+    op(Op, Priority, none, _, Operators),
+    !,
+    expr_r(Priority, Rhs, Operators).
+expr_n_rest(_, [], _) --> [].
+
+expr_r(Priority, Expr, Operators) -->
+    expr_l(Priority, Lhs, Operators),
+    expr_r_rest(Priority, Rhs, Operators),
+    { merge_expr(Lhs, Rhs, Expr) }.
+expr_r_rest(Priority, [Op, Expr], Operators) -->
+    op(Op, Priority, right, _, Operators),
+    !,
+    expr_l(Priority, Rhs, Operators),
+    expr_r_rest(Priority, ExprRest, Operators),
+    { merge_expr(Rhs, ExprRest, Expr) }.
+expr_r_rest(_, [], _) --> [].
+
+expr_l(Priority, Expr, Operators) -->
+    expr_u_r(Priority, Lhs, Operators),
+    expr_l_rest(Priority, Lhs, Expr, Operators).
+expr_l_rest(Priority, Acc, Result, Operators) -->
+    op(Op, Priority, left, _, Operators),
+    !,
+    expr_u_r(Priority, Rhs, Operators),
+    expr_l_rest(Priority, app(app(Op, Acc), Rhs), Result, Operators).
+expr_l_rest(_, Acc, Acc, _) --> [].
+
+expr_u_r(Priority, Expr, Operators) -->
+    expr_u_l(Priority, Arg, Operators),
+    expr_u_r_rest(Priority, Arg, Expr, Operators).
+expr_u_r_rest(Priority, Arg, app(Op, Arg), Operators) -->
+    op(Op, Priority, right_unary, _, Operators),
+    !.
+expr_u_r_rest(_, Arg, Arg, _) --> 
+    [].
+
+expr_u_l(5, app(Op, Arg), Operators) -->
+    op(Op, 5, left_unary, _, Operators),
+    !,
+    application(Arg, Operators).
+expr_u_l(5, Expr, Operators) -->
+    !,
+    application(Expr, Operators).
+expr_u_l(Priority, app(Op, Arg), Operators) -->
+    op(Op, Priority, left_unary, _, Operators),
+    !,
+    { N is Priority + 1 },
+    expr_n(N, Arg, Operators).
+expr_u_l(Priority, Expr, Operators) -->
+    { N is Priority + 1 },
+    expr_n(N, Expr, Operators).
+
+application(Expr, Operators) -->
+    atomic_expression(Lhs, Operators),
+    application_rest(Lhs, Expr, Operators).
+application_rest(Acc, Result, Operators) -->
+    atomic_expression(Arg, Operators),
+    !,
+    application_rest(app(Acc, Arg), Result, Operators).
+application_rest(Acc, Acc, _) --> [].
+
+constant(int(N)) -->
+    [int(N) at _],
+    !.
+constant(unit) -->
+    ['(' at _],
+    !,
+    [')' at _].
+constant(float(X)) -->
+    [float(X) at _],
+    !.
+constant(string(Str)) -->
+    [string(Str) at _],
+    !.
+constant(char(C)) -->
+    [char(C) at _].
+
+merge_expr(Lhs, [Op, Rhs], app(app(Op, Lhs), Rhs)) :-
+    !.
+merge_expr(Lhs, [], Lhs).
+
+lambda(lambda(Params, Expr), Operators) -->
+    ['{' at Start],
+    !,
+    lambda_param_list(Start, Params),
+    expression_top_level(Start, Expr, Operators),
+    expected_token(Start, '}', 'closing curly bracket', _).
+lambda_param_list(Start, Params) -->
+    expected_token(Start, op('|'), 'lambda parameter list delimiter', _),
+    formal_parameters(Params),
+    expected_token(Start, op('|'), 'lambda parameter list delimiter', _).
+
+list_expression(_, list([], []), _) -->
+    [']' at _],
+    !.
+list_expression(Start, list([H | T], Tail), Operators) -->
+    list_element(Start, H, Operators),
+    !,
+    list_expression_tail(Start, list(T, Tail), Operators).
+list_expression_tail(Start, list([], Tail), Operators) -->
+    [op('|') at _],
+    !,
+    list_element(Start, Tail, Operators),
+    expected_token(Start, ']', 'closing square bracket', _).
+list_expression_tail(Start, list([H | T], Tail), Operators) -->
+    [',' at _],
+    !,
+    list_element(Start, H, Operators),
+    list_expression_tail(Start, list(T, Tail), Operators).
+list_expression_tail(Start, list([], []), _) -->
+    expected_token(Start, ']', 'closing square bracket', _).
+list_element(_, Elem, Operators) -->
+    atomic_expression(Elem, Operators),
+    !.
+list_element(Start, _) -->
+    { throw(error('Syntax error in list literal', []) at Start) }.
+
+atomic_expression(Lambda, Operators) -->
+    lambda(Lambda, Operators),
+    !.
+atomic_expression(Const, _) -->
+    constant(Const),
+    !.
+atomic_expression(constructor(Constructor) ,_) -->
+    [tid(Constructor) at _],
+    !.
+atomic_expression(Var, _) -->
+    valid_variable_name(Var),
+    !.
+atomic_expression(Expr, Operators) -->
+    ['(' at Start],
+    !,
+    expression_top_level(Start, Expr, Operators),
+    expected_token(Start, ')', 'closing parenthesis', _).
+atomic_expression(List, Operators) -->
+    ['[' at Start],
+    !,
+    list_expression(Start, List, Operators).
+
+
+% TODO: 1. lists, 2. unit type 3. lambdas
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%     CONDITIONAL EXPRESSIONS       %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+conditional_expression(Start, if(Cond, Cons, Alt), Operators) -->
+    expression_top_level(Start, Cond, Operators),
+    expected_token(Start, keyword(then), 'then keyword', ThenStart),
+    expression_top_level(ThenStart, Cons, Operators),
+    conditional_expression_else(Start, Alt, Operators).
+
+conditional_expression_else(_, unit, _) -->
+    [keyword(end) at _],
+    !.
+conditional_expression_else(Start, Alt, Operators) -->
+    expected_token(Start, keyword(else), 'else keyword', ElseStart),
+    expression_top_level(ElseStart, Alt, Operators),
+    expected_token(Start, keyword(end), 'end keyword', _).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%         LET EXPRESSIONS           %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+let_definition(Start, let(Name, Type, Value, Expression), Operators) -->
+    let_definition_name(Start, Name),
+    expected_token(Start, ':', 'colon operator', _),
+    type(Type),
+    expected_token(Start, op('='), 'assignment operator', _),
+    expression_top_level(Start, Value, Operators),
+    expected_token(Start, keyword(in), 'in keyword', _),
+    expression_top_level(Start, Expression, Operators),
+    expected_token(Start, keyword(end), 'end keyword', _).
+
+let_definition_name(_, Name) -->
+    valid_variable_name(Name),
+    !.
+let_definition_name(Start, _) -->
+    { throw(error('Invalid variable name in let definition', []) at Start) }.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%         PATTERN MATCHING          %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+pattern_matching(Start, pmatch(Expr, Patterns), Operators) -->
+    expression_top_level(Start, Expr, Operators),
+    expected_token(Start, keyword(with), 'with keyword', 'pattern matching'),
+    pattern_matching_cases(Start, Patterns, Operators),
+    expected_token(Start, keyword(end), 'end keyword', 'pattern matching').
+
+pattern_matching_cases(Start, [Case | Cases], Operators) -->
+    pattern_matching_case(Start, Case, Operators),
+    !,
+    pattern_matching_cases(Start, Cases, Operators).
+pattern_matching_cases(_, [], _) --> [].
+
+pattern_matching_case(Start, '=>'(Pattern, Expr), Operators) -->
+    [keyword(case) at _],
+    pattern_guard(Start, Pattern),
+    expected_token(
+        Start, 
+        op('=>'), 
+        '=> operator', 
+        'pattern matching case'
+    ),
+    expression_top_level(Start, Expr, Operators).
+
+pattern_guard(_, Pattern) -->
+    pattern(Pattern),
+    !.
+pattern_guard(Start, _) -->
+    { throw(error('Syntax error in pattern matching pattern', []) at Start) }.
+
+pattern(Pattern) -->
+    deconstructor_pattern(Left),
+    pattern_tail(Tail),
+    { construct_tuple([Left | Tail], Pattern) }.
+pattern_tail([P | Ps]) -->
+    [',' at _],
+    !,
+    deconstructor_pattern(P),
+    pattern_tail(Ps).
+pattern_tail([]) --> [].
+
+deconstructor_pattern(Pattern) -->
+    atomic_pattern(Pattern),
+    !.
+deconstructor_pattern(Pattern) -->
+    [tid(Constructor) at _],
+    deconstructor_pattern_argument(Constructor, Pattern).
+deconstructor_pattern_argument(Constructor, adt(Constructor, Argument)) -->
+    atomic_pattern(Argument),
+    !.
+deconstructor_pattern_argument(Constructor, Constructor) --> [].
+
+atomic_pattern(Pattern) -->
+    valid_variable_name(Pattern),
+    !.
+atomic_pattern(Pattern) -->
+    ['(' at _],
+    !,
+    pattern(Pattern),
+    [')' at _].
+atomic_pattern(Pattern) -->
+    ['[' at _],
+    !,
+    list_pattern(Pattern).
+atomic_pattern(Const) -->
+    constant(Const).
+
+list_pattern(list([], [])) -->
+    [']' at _],
+    !.
+list_pattern(list([H | T], Tail)) -->
+    deconstructor_pattern(H),
+    list_pattern_tail(list(T, Tail)).
+list_pattern_tail(list([H | T], Tail)) -->
+    [',' at _],
+    !,
+    deconstructor_pattern(H),
+    list_pattern_tail(list(T, Tail)).
+list_pattern_tail(list([], [])) -->
+    [']' at _],
+    !.
+list_pattern_tail(list([], Tail)) -->
+    [op('|') at _],
+    valid_variable_name(Tail).
+    [']' at _].
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                   %
+%             AUXILIARY             %
+%                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+construct_tuple([], undefined) :- !.
+construct_tuple([X], X) :- !.
+construct_tuple(Xs, tuple(N, Tuple)) :-
+    length(Xs, N),
+    construct_with_functor(',', Xs, Tuple).
+
+construct_with_functor(_, [X], X) :- !.
+construct_with_functor(F, [X | Xs], Result) :-
+    construct_with_functor(F, Xs, PrevResult),
+    Result =.. [F, X, PrevResult].
+
+expected_token(_, TokenVal, _, Pos) -->
+    [TokenVal at Pos],
+    !.
+expected_token(Start, _, TokenName, _) -->
+    { throw(error('Missing expected ~w.', [TokenName]) at Start) }.
+
+throw_invalid_token(Expected, Context, Token at Pos) :-
+    Token =.. [Functor, Value],
+    !,
+    throw(
+        error(
+            'Invalid token "~w" of type "~w" in ~w. ~w',
+            [Value, Functor, Context, Expected]
+        ) at Pos
+    ).
+throw_invalid_token(Expected, Context, Token at Pos) :-
+    throw(
+        error(
+            'Invalid token "~w" in ~w. ~w',
+            [Token, Context, Expected]
+        ) at Pos
+    ).
+
+peek(Token), [Token] --> [Token].
