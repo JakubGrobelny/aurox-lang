@@ -136,7 +136,7 @@ classify_token(Atom, keyword(Atom)) :-
     member(
         Atom,
         [
-            let, in, if, 
+            let, in, if, and, or,
             then, match, else, 
             with, type, import, 
             define, '_', defop, 

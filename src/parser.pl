@@ -406,15 +406,33 @@ expression(Tuple, Operators) -->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tuple_expression(Expr, Operators) -->
-    expr_n(0, Lhs, Operators),
+    expr_logical_or(Lhs, Operators),
     tuple_expression_tail(Rhs, Operators),
     { construct_tuple([Lhs | Rhs], Expr) }.
 tuple_expression_tail([Expr | Exprs], Operators) -->
     [',' at _],
     !,
-    expr_n(0, Expr, Operators),
+    expr_logical_or(Expr, Operators),
     tuple_expression_tail(Exprs, Operators).
 tuple_expression_tail([], _) --> [].
+
+expr_logical_or(Expr, Operators) -->
+    expr_logical_and(Lhs, Operators),
+    expr_logical_or_rest(Lhs, Expr, Operators).
+expr_logical_or_rest(Lhs, or(Lhs, Rhs), Operators) -->
+    [keyword(or) at _],
+    !,
+    expr_logical_and(Rhs, Operators).
+expr_logical_or_rest(Lhs, Lhs, _) --> [].
+
+expr_logical_and(Expr, Operators) -->
+    expr_n(0, Lhs, Operators),
+    expr_logical_and_rest(Lhs, Expr, Operators).
+expr_logical_and_rest(Lhs, and(Lhs, Rhs), Operators) -->
+    [keyword(and) at _],
+    !,
+    expr_n(0, Rhs, Operators).
+expr_logical_and_rest(Lhs, Lhs, _) --> [].
 
 expr_n(Priority, Expr, Operators) -->
     expr_r(Priority, Lhs, Operators),
