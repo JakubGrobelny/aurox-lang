@@ -1,3 +1,7 @@
 defop + 2 left
+defop * 3 left
+defop ^ 4 right
 
-1 + 2
+a+b^c*d;
+1 + 2 * 3 * 4;
+0 + 0

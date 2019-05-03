@@ -1,0 +1,5 @@
+defop % 5 right_unary
+defop + 3 left
+defop $ 0 left
+
+f $ 10 + 30%

@@ -213,7 +213,7 @@ operator_definition(_, OldOperators, NewOperators) -->
 operator_definition(Start, _, _) -->
     { throw(error('Syntax error in operator definition', []) at Start) }.
 
-op(Priority, Assoc, Op, Pos, Ops) -->
+operator(Op, Priority, Assoc, Pos, Ops) -->
     [op(Op) at Pos],
     { is_operator_type(Op, Priority, Assoc, Ops) }.
 
@@ -237,10 +237,9 @@ valid_associativity(Assoc, Pos) :-
         ) at Pos
     ).
 
-empty_operator_list(ops(Infix, Postfix, Prefix)) :-
+empty_operator_list(ops(Infix, PostPrefix)) :-
     dict_create(Infix, infix, []),
-    dict_create(Postfix, postfix, []),
-    dict_create(Prefix, prefix, []).
+    dict_create(PostPrefix, postprefix, []).
 
 infix(Assoc) :-
     member(Assoc, [left, right, none]).
@@ -249,8 +248,8 @@ update_operators(
     Op, 
     Priority, 
     Assoc, 
-    ops(Infix, Postfix, Prefix), 
-    ops(NewInfix, Postfix, Prefix)
+    ops(Infix, PostPrefix), 
+    ops(NewInfix, PostPrefix)
 ) :-
     infix(Assoc),
     !,
@@ -258,31 +257,20 @@ update_operators(
 update_operators(
     Op, 
     Priority, 
-    left_unary, 
-    ops(Infix, Postfix, Prefix), 
-    ops(Infix, Postfix, NewPrefix)
+    UnaryAssoc, 
+    ops(Infix, PostPrefix), 
+    ops(Infix, NewPostPrefix)
 ) :-
-    !,
-    put_dict(Op, Prefix, Priority, NewPrefix).
-update_operators(
-    Op, 
-    Priority, 
-    right_unary, 
-    ops(Infix, Postfix, Prefix), 
-    ops(Infix, NewPostfix, Prefix)
-) :-
-    put_dict(Op, Postfix, Priority, NewPostfix).
+    put_dict(Op, PostPrefix, (Priority, UnaryAssoc), NewPostPrefix).
 
-is_operator_type(Op, Priority, Assoc, ops(Infix, _, _)) :-
+is_operator_type(Op, Priority, Assoc, ops(Infix, _)) :-
     member(Assoc, [left, right, none]),
     !,
     get_dict(Op, Infix, (Priority, Assoc)).
-is_operator_type(Op, Priority, left_unary, ops(_, _, Prefix)) :-
+is_operator_type(Op, Priority, UnaryAssoc, ops(_, PostPrefix)) :-
     !,
-    get_dict(Op, Prefix, Priority).
-is_operator_type(Op, Priority, right_unary, ops(_, Postfix, _)) :-
-    !,
-    get_dict(Op, Postfix, Priority).
+    get_dict(Op, PostPrefix, (Priority, UnaryAssoc)).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -409,7 +397,7 @@ expr_n(Priority, Expr, Operators) -->
     expr_n_rest(Priority, Rhs, Operators),
     { merge_expr(Lhs, Rhs, Expr) }.
 expr_n_rest(Priority, [Op, Rhs], Operators) -->
-    op(Op, Priority, none, _, Operators),
+    operator(Op, Priority, none, _, Operators),
     !,
     expr_r(Priority, Rhs, Operators).
 expr_n_rest(_, [], _) --> [].
@@ -419,7 +407,7 @@ expr_r(Priority, Expr, Operators) -->
     expr_r_rest(Priority, Rhs, Operators),
     { merge_expr(Lhs, Rhs, Expr) }.
 expr_r_rest(Priority, [Op, Expr], Operators) -->
-    op(Op, Priority, right, _, Operators),
+    operator(Op, Priority, right, _, Operators),
     !,
     expr_l(Priority, Rhs, Operators),
     expr_r_rest(Priority, ExprRest, Operators),
@@ -430,7 +418,7 @@ expr_l(Priority, Expr, Operators) -->
     expr_u_r(Priority, Lhs, Operators),
     expr_l_rest(Priority, Lhs, Expr, Operators).
 expr_l_rest(Priority, Acc, Result, Operators) -->
-    op(Op, Priority, left, _, Operators),
+    operator(Op, Priority, left, _, Operators),
     !,
     expr_u_r(Priority, Rhs, Operators),
     expr_l_rest(Priority, app(app(Op, Acc), Rhs), Result, Operators).
@@ -440,20 +428,19 @@ expr_u_r(Priority, Expr, Operators) -->
     expr_u_l(Priority, Arg, Operators),
     expr_u_r_rest(Priority, Arg, Expr, Operators).
 expr_u_r_rest(Priority, Arg, app(Op, Arg), Operators) -->
-    op(Op, Priority, right_unary, _, Operators),
+    operator(Op, Priority, right_unary, _, Operators),
     !.
-expr_u_r_rest(_, Arg, Arg, _) --> 
-    [].
+expr_u_r_rest(_, Arg, Arg, _) --> [].
 
 expr_u_l(5, app(Op, Arg), Operators) -->
-    op(Op, 5, left_unary, _, Operators),
+    operator(Op, 5, left_unary, _, Operators),
     !,
     application(Arg, Operators).
 expr_u_l(5, Expr, Operators) -->
     !,
     application(Expr, Operators).
 expr_u_l(Priority, app(Op, Arg), Operators) -->
-    op(Op, Priority, left_unary, _, Operators),
+    operator(Op, Priority, left_unary, _, Operators),
     !,
     { N is Priority + 1 },
     expr_n(N, Arg, Operators).
