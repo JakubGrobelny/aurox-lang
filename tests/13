@@ -1,3 +1,0 @@
-match t with
-    case a, X b, c => a + b + c # operators are undefined
-end

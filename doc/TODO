@@ -1,0 +1,4 @@
+1. better error messages (add context to expected_token)
+2. fix repl
+3. change unary/binary operator names so that they are separate functions
+4. absolute filenames using unix(argv(Argv))

@@ -1,17 +1,10 @@
+defop * 15 left
 
-define one : Integer = 1 end
-
-define two := 
-    one + one
+define map f xs : (a -> b) -> [a] -> [b] =
+    match xs with
+        case [] => []
+        case [x | xs] => [f x | map f xs]
+    end
 end
 
-type Tree a with
-    case Leaf
-    case Node (Tree a, a, Tree a)
-end
-
-type Enum with
-    case One
-    case Two
-    case Three
-end
+map {|x| x*x} [1,2,3,4]

@@ -422,28 +422,33 @@ expr_l_rest(Priority, Acc, Result, Operators) -->
     operator(Op, Priority, left, _, Operators, NOperators),
     !,
     expr_u_r(Priority, Rhs, NOperators),
-    expr_l_rest(Priority, app(app(op(Op), Acc), Rhs), Result, NOperators).
+    expr_l_rest(Priority, app(app(id(Op), Acc), Rhs), Result, NOperators).
 expr_l_rest(_, Acc, Acc, _) --> [].
 
 expr_u_r(Priority, Expr, Operators) -->
     expr_u_l(Priority, Arg, Operators),
     expr_u_r_rest(Priority, Arg, Expr, Operators).
-expr_u_r_rest(Priority, Arg, app(unop(Op), Arg), Operators) -->
+expr_u_r_rest(Priority, Arg, app(id(UnOp), Arg), Operators) -->
     operator(Op, Priority, right_unary, _, Operators, _),
-    !.
+    !,
+    { mark_unary_operator(Op, UnOp) }.
 expr_u_r_rest(_, Arg, Arg, _) --> [].
 
-expr_u_l(20, app(unop(Op), Arg), Operators) -->
+expr_u_l(20, app(id(UnOp), Arg), Operators) -->
     operator(Op, 20, left_unary, _, Operators, NOperators),
     !,
+    { mark_unary_operator(Op, UnOp) },
     application(Arg, NOperators).
 expr_u_l(20, Expr, Operators) -->
     !,
     application(Expr, Operators).
-expr_u_l(Priority, app(unop(Op), Arg), Operators) -->
+expr_u_l(Priority, app(id(UnOp), Arg), Operators) -->
     operator(Op, Priority, left_unary, _, Operators, NOperators),
     !,
-    { N is Priority + 1 },
+    { 
+        N is Priority + 1,
+        mark_unary_operator(Op, UnOp)
+    },
     expr_n(N, Arg, NOperators).
 expr_u_l(Priority, Expr, Operators) -->
     { N is Priority + 1 },
@@ -477,7 +482,7 @@ constant(string(Str)) -->
 constant(char(C)) -->
     [char(C) at _].
 
-merge_expr(Lhs, [Op, Rhs], app(app(op(Op), Lhs), Rhs)) :-
+merge_expr(Lhs, [Op, Rhs], app(app(id(Op), Lhs), Rhs)) :-
     !.
 merge_expr(Lhs, [], Lhs).
 

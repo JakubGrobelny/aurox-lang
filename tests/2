@@ -1,7 +1,6 @@
-defop + 2 left
-defop * 3 left
-defop ^ 4 right
+defop % 20 right_unary
+defop ! 19 right_unary
+defop - 19 left_unary
+defop - 11 left
 
-a+b^c*d;
-1 + 2 * 3 * 4;
-0 + 0
+-2! - 3%

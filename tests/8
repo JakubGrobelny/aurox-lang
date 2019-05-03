@@ -1,5 +1,0 @@
-define ($) f x := f x
-end
-
-define flip f x y := f y x
-end

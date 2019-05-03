@@ -1,5 +1,0 @@
-define f x : a -> a = 
-    x
-end
-
-define pi := 3.14 end

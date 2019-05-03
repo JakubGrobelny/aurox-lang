@@ -78,3 +78,6 @@ is_operator_type(Op, Priority, UnaryAssoc, ops(_, PostPrefix)) :-
     !,
     get_dict(Op, PostPrefix, (Priority, UnaryAssoc)).
 
+mark_unary_operator(Op, UnOp) :-
+    atomic_list_concat([u, Op], UnOp).
+    
