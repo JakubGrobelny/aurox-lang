@@ -13,11 +13,12 @@ parse_stdin(Prev, AST, Leftovers) :-
     read_line_to_codes(user_input, Line),
     char_codes_to_atoms(Line, Atoms),
     append(Prev, Atoms, Total),
+    empty_operator_list(Operators),
     catch(
-        (phrase(lexer(Tokens, pos(1,1)), Total, Leftovers),
-         phrase(parser(AST), Tokens)),
+        (phrase(lexer(Tokens, pos(stdin, 1,1)), Total, Leftovers),
+         phrase(program(AST, Operators), Tokens)),
         error(Format, Args) at Pos,
-        print_error(Pos, stdin, Format, Args)
+        print_error(Pos, Format, Args)
     ).
 
 % TODO: implement

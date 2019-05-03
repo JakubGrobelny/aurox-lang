@@ -217,9 +217,19 @@ operator_definition(_, OldOperators, NewOperators) -->
 operator_definition(Start, _, _) -->
     { throw(error('Syntax error in operator definition', []) at Start) }.
 
-operator(Op, Priority, Assoc, Pos, Ops) -->
+operator(Op, Priority, Assoc, Pos, Ops, NOps) -->
     [op(Op) at Pos],
-    { is_operator_type(Op, Priority, Assoc, Ops) }.
+    { define_operator_if_needed(Op, Priority, Assoc, Ops, NOps) }.
+
+define_operator_if_needed(Op, Priority, Assoc, Ops, Ops) :-
+    is_operator_type(Op, Priority, Assoc, Ops),
+    !.
+define_operator_if_needed(Op, _, Assoc, ops(I, P), NOps) :-
+    member(Assoc, [left, none, right]),
+    \+ get_dict(Op, I, _),
+    !,
+    update_operators(Op, 10, left, ops(I, P), NOps).
+
 
 valid_priority(N, _) :-
     between(0, 20, N),
@@ -402,9 +412,9 @@ expr_n(Priority, Expr, Operators) -->
     expr_n_rest(Priority, Rhs, Operators),
     { merge_expr(Lhs, Rhs, Expr) }.
 expr_n_rest(Priority, [Op, Rhs], Operators) -->
-    operator(Op, Priority, none, _, Operators),
+    operator(Op, Priority, none, _, Operators, NOperators),
     !,
-    expr_r(Priority, Rhs, Operators).
+    expr_r(Priority, Rhs, NOperators).
 expr_n_rest(_, [], _) --> [].
 
 expr_r(Priority, Expr, Operators) -->
@@ -412,10 +422,10 @@ expr_r(Priority, Expr, Operators) -->
     expr_r_rest(Priority, Rhs, Operators),
     { merge_expr(Lhs, Rhs, Expr) }.
 expr_r_rest(Priority, [Op, Expr], Operators) -->
-    operator(Op, Priority, right, _, Operators),
+    operator(Op, Priority, right, _, Operators, NOperators),
     !,
-    expr_l(Priority, Rhs, Operators),
-    expr_r_rest(Priority, ExprRest, Operators),
+    expr_l(Priority, Rhs, NOperators),
+    expr_r_rest(Priority, ExprRest, NOperators),
     { merge_expr(Rhs, ExprRest, Expr) }.
 expr_r_rest(_, [], _) --> [].
 
@@ -423,32 +433,32 @@ expr_l(Priority, Expr, Operators) -->
     expr_u_r(Priority, Lhs, Operators),
     expr_l_rest(Priority, Lhs, Expr, Operators).
 expr_l_rest(Priority, Acc, Result, Operators) -->
-    operator(Op, Priority, left, _, Operators),
+    operator(Op, Priority, left, _, Operators, NOperators),
     !,
-    expr_u_r(Priority, Rhs, Operators),
-    expr_l_rest(Priority, app(app(op(Op), Acc), Rhs), Result, Operators).
+    expr_u_r(Priority, Rhs, NOperators),
+    expr_l_rest(Priority, app(app(op(Op), Acc), Rhs), Result, NOperators).
 expr_l_rest(_, Acc, Acc, _) --> [].
 
 expr_u_r(Priority, Expr, Operators) -->
     expr_u_l(Priority, Arg, Operators),
     expr_u_r_rest(Priority, Arg, Expr, Operators).
 expr_u_r_rest(Priority, Arg, app(unop(Op), Arg), Operators) -->
-    operator(Op, Priority, right_unary, _, Operators),
+    operator(Op, Priority, right_unary, _, Operators, _),
     !.
 expr_u_r_rest(_, Arg, Arg, _) --> [].
 
 expr_u_l(20, app(unop(Op), Arg), Operators) -->
-    operator(Op, 20, left_unary, _, Operators),
+    operator(Op, 20, left_unary, _, Operators, NOperators),
     !,
-    application(Arg, Operators).
+    application(Arg, NOperators).
 expr_u_l(20, Expr, Operators) -->
     !,
     application(Expr, Operators).
 expr_u_l(Priority, app(unop(Op), Arg), Operators) -->
-    operator(Op, Priority, left_unary, _, Operators),
+    operator(Op, Priority, left_unary, _, Operators, NOperators),
     !,
     { N is Priority + 1 },
-    expr_n(N, Arg, Operators).
+    expr_n(N, Arg, NOperators).
 expr_u_l(Priority, Expr, Operators) -->
     { N is Priority + 1 },
     expr_n(N, Expr, Operators).
