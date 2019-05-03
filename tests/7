@@ -1,0 +1,3 @@
+define f x y : (a -> b -> c) -> a -> c =
+    f x y
+end

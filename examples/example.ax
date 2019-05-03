@@ -5,7 +5,7 @@ end
 
 defop $ 0 right
 
-defun ($) f x : (a -> b) -> a -> b = 
+define ($) f x : (a -> b) -> a -> b = 
     f x
 end
 

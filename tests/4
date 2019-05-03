@@ -1,0 +1,5 @@
+defop @$% 3 left
+
+{ |x y z| x (y @$% z)}
+
+()

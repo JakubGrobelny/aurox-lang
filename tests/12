@@ -1,0 +1,3 @@
+defop == 0 none
+
+(read_int ()) == 42

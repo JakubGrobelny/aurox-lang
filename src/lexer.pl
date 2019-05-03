@@ -127,7 +127,7 @@ special(Char) -->
         member(
             Char, 
             ['-', '+', '*', '/', '=', '>', '<', '·',
-             '≠', '≤', '≥', '»', '«',
+             '≠', '≤', '≥', '»', '«', '.',
              '!', '@', '%', '^', '~', '&', '$', '|']
         )
     }.
@@ -136,7 +136,7 @@ classify_token(Atom, keyword(Atom)) :-
     member(
         Atom,
         [
-            let, and, in, if, 
+            let, in, if, 
             then, match, else, 
             with, type, import, 
             define, '_', defop, 
@@ -251,6 +251,11 @@ lexer([op(Op) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
         atomic_list_concat([OpHead | OpTail], Op)
     }, 
     lexer(Tokens, pos(F, L, NC)).
+lexer([keyword('_') at pos(F, L ,C) | Tokens], pos(F, L, C)) -->
+    ['_'],
+    !,
+    { NC is C + 1 },
+    lexer(Tokens, pos(F, L, NC)).
 lexer([tid(TId) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     uppercase(Letter), 
     !, 
@@ -282,9 +287,7 @@ lexer([char(Char) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     char_delimiter,
     !,
     char_literal(Char, Len, pos(F, L, C)),
-    {
-        NC is C + Len + 2 
-    },
+    { NC is C + Len + 2 },
     lexer(Tokens, pos(F, L, NC)).  
 lexer([string(Str) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     string_delimiter,

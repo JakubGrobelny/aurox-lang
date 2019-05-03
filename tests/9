@@ -1,0 +1,10 @@
+match f x y z with
+    case Y (X (a, b, _)) => true
+end
+
+define map f xs : (a -> b) -> [a] -> [b] =
+    match xs with
+        case []       => []
+        case [x | xs] => [f x | map f xs]
+    end
+end

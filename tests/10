@@ -1,0 +1,3 @@
+let f : (Integer -> Integer -> Integer) = {|a _| a} in
+    f 3 4
+end

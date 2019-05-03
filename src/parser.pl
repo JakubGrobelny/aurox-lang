@@ -89,18 +89,23 @@ define_statement(Start, define(Name, Arguments, Type, Value) at Start, Ops) -->
     expected_token(Start, ':', colon, _),
     type(Type),
     expected_token(Start, op('='), 'assignment operator', _),
-    expression_top_level(Start, Value, Ops),
+    peek(_ at ExprStart),
+    expression_top_level(ExprStart, Value, Ops),
     expected_token(Start, keyword(end), 'end keyword', _).
 define_statement(Start, _, _) -->
     { throw(error('Syntax error in definition', []) at Start) }.
 
-valid_variable_name(id(Name)) -->
-    [id(Name) at _],
-    !.
+
 valid_variable_name(wildcard) -->
     [keyword('_') at _],
     !.
-valid_variable_name(op(Op)) -->
+valid_variable_name(Id) -->
+    valid_identifier(Id).
+
+valid_identifier(id(Name)) -->
+    [id(Name) at _],
+    !.
+valid_identifier(op(Op)) -->
     ['(' at _],
     [op(Op) at _],
     [')' at _].
@@ -156,7 +161,6 @@ type_definition_cases(Start, [Constructor | Constructors]) -->
 type_definition_cases(_, _) -->
     peek(Token),
     {
-        \+ Token = op(end) at _,
         \+ Token = keyword(end) at _,
         !,
         throw_invalid_token(
@@ -218,7 +222,7 @@ operator(Op, Priority, Assoc, Pos, Ops) -->
     { is_operator_type(Op, Priority, Assoc, Ops) }.
 
 valid_priority(N, _) :-
-    member(N, [0,1,2,3,4,5]),
+    between(0, 20, N),
     !.
 valid_priority(N, Pos) :-
     throw(
@@ -346,10 +350,11 @@ expression_top_level(Start, Expr at Start, Operators) -->
 expression_top_level(Start, _, _) -->
     { throw(error('Syntax error in expression', []) at Start) }.
 
-expression_sequence([Expr | Exprs], Operators) -->
+expression_sequence(Result, Operators) -->
     expression(Expr, Operators),
     !,
-    expression_sequence_tail(Exprs, Operators).
+    expression_sequence_tail(Exprs, Operators),
+    { Exprs = [] -> Result = Expr; Result = [Expr | Exprs] }.
 expression_sequence_tail([Expr | Exprs], Operators) -->
     [';' at _],
     !,
@@ -421,25 +426,25 @@ expr_l_rest(Priority, Acc, Result, Operators) -->
     operator(Op, Priority, left, _, Operators),
     !,
     expr_u_r(Priority, Rhs, Operators),
-    expr_l_rest(Priority, app(app(Op, Acc), Rhs), Result, Operators).
+    expr_l_rest(Priority, app(app(op(Op), Acc), Rhs), Result, Operators).
 expr_l_rest(_, Acc, Acc, _) --> [].
 
 expr_u_r(Priority, Expr, Operators) -->
     expr_u_l(Priority, Arg, Operators),
     expr_u_r_rest(Priority, Arg, Expr, Operators).
-expr_u_r_rest(Priority, Arg, app(Op, Arg), Operators) -->
+expr_u_r_rest(Priority, Arg, app(unop(Op), Arg), Operators) -->
     operator(Op, Priority, right_unary, _, Operators),
     !.
 expr_u_r_rest(_, Arg, Arg, _) --> [].
 
-expr_u_l(5, app(Op, Arg), Operators) -->
-    operator(Op, 5, left_unary, _, Operators),
+expr_u_l(20, app(unop(Op), Arg), Operators) -->
+    operator(Op, 20, left_unary, _, Operators),
     !,
     application(Arg, Operators).
-expr_u_l(5, Expr, Operators) -->
+expr_u_l(20, Expr, Operators) -->
     !,
     application(Expr, Operators).
-expr_u_l(Priority, app(Op, Arg), Operators) -->
+expr_u_l(Priority, app(unop(Op), Arg), Operators) -->
     operator(Op, Priority, left_unary, _, Operators),
     !,
     { N is Priority + 1 },
@@ -460,6 +465,9 @@ application_rest(Acc, Acc, _) --> [].
 constant(int(N)) -->
     [int(N) at _],
     !.
+constant(bool(B)) -->
+    [bool(B) at _],
+    !.
 constant(unit) -->
     ['(' at _],
     !,
@@ -473,7 +481,7 @@ constant(string(Str)) -->
 constant(char(C)) -->
     [char(C) at _].
 
-merge_expr(Lhs, [Op, Rhs], app(app(Op, Lhs), Rhs)) :-
+merge_expr(Lhs, [Op, Rhs], app(app(op(Op), Lhs), Rhs)) :-
     !.
 merge_expr(Lhs, [], Lhs).
 
@@ -508,7 +516,7 @@ list_expression_tail(Start, list([H | T], Tail), Operators) -->
 list_expression_tail(Start, list([], []), _) -->
     expected_token(Start, ']', 'closing square bracket', _).
 list_element(_, Elem, Operators) -->
-    atomic_expression(Elem, Operators),
+    expr_n(0, Elem, Operators),
     !.
 list_element(Start, _) -->
     { throw(error('Syntax error in list literal', []) at Start) }.
@@ -523,12 +531,12 @@ atomic_expression(constructor(Constructor) ,_) -->
     [tid(Constructor) at _],
     !.
 atomic_expression(Var, _) -->
-    valid_variable_name(Var),
+    valid_identifier(Var),
     !.
 atomic_expression(Expr, Operators) -->
     ['(' at Start],
     !,
-    expression_top_level(Start, Expr, Operators),
+    expression_top_level(Start, Expr at _, Operators),
     expected_token(Start, ')', 'closing parenthesis', _).
 atomic_expression(List, Operators) -->
     ['[' at Start],
@@ -571,7 +579,8 @@ let_definition(Start, let(Name, Type, Value, Expression), Operators) -->
     expected_token(Start, op('='), 'assignment operator', _),
     expression_top_level(Start, Value, Operators),
     expected_token(Start, keyword(in), 'in keyword', _),
-    expression_top_level(Start, Expression, Operators),
+    peek(_ at ExprStart),
+    expression_top_level(ExprStart, Expression, Operators),
     expected_token(Start, keyword(end), 'end keyword', _).
 
 let_definition_name(_, Name) -->
@@ -588,9 +597,9 @@ let_definition_name(Start, _) -->
 
 pattern_matching(Start, pmatch(Expr, Patterns), Operators) -->
     expression_top_level(Start, Expr, Operators),
-    expected_token(Start, keyword(with), 'with keyword', 'pattern matching'),
+    expected_token(Start, keyword(with), 'with keyword', _),
     pattern_matching_cases(Start, Patterns, Operators),
-    expected_token(Start, keyword(end), 'end keyword', 'pattern matching').
+    expected_token(Start, keyword(end), 'end keyword', _).
 
 pattern_matching_cases(Start, [Case | Cases], Operators) -->
     pattern_matching_case(Start, Case, Operators),
@@ -601,12 +610,7 @@ pattern_matching_cases(_, [], _) --> [].
 pattern_matching_case(Start, '=>'(Pattern, Expr), Operators) -->
     [keyword(case) at _],
     pattern_guard(Start, Pattern),
-    expected_token(
-        Start, 
-        op('=>'), 
-        '=> operator', 
-        'pattern matching case'
-    ),
+    expected_token(Start, op('=>'), '=> operator', _),
     expression_top_level(Start, Expr, Operators).
 
 pattern_guard(_, Pattern) -->
@@ -668,7 +672,7 @@ list_pattern_tail(list([], [])) -->
     !.
 list_pattern_tail(list([], Tail)) -->
     [op('|') at _],
-    valid_variable_name(Tail).
+    valid_variable_name(Tail),
     [']' at _].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
