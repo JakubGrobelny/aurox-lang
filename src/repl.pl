@@ -17,7 +17,7 @@ parse_stdin(Prev, AST, Leftovers, Operators, NewOperators) :-
         (phrase(lexer(Tokens, pos(stdin, 1,1)), Total, Leftovers),
          phrase(program(AST, Operators, NewOperators), Tokens)),
         error(Format, Args) at Pos,
-        print_error(Pos, Format, Args)
+        print_error_and_halt(Pos, Format, Args)
     ).
 
 eval(Xs) :- 

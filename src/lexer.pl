@@ -16,7 +16,7 @@ tokenize_file(FileName, Tokens) :-
     catch(
         phrase(lexer(Tokens, pos(FileName, 1,1)), ListOfAtoms),
         error(Format, Args) at Pos,
-        print_error(Pos, Format, Args)
+        print_error_and_halt(Pos, Format, Args)
     ).
 
 lowercase(Char) --> [Char], { char_type(Char, lower) }.

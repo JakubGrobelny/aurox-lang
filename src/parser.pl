@@ -6,7 +6,7 @@ parse_file(FileName, AST) :-
     catch(
         phrase(program(AST, Operators, _), Tokens),
         error(Format, Args) at Pos,
-        print_error(Pos, Format, Args)
+        print_error_and_halt(Pos, Format, Args)
     ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,7 +82,7 @@ file_name_to_import(_, _) -->
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-define_statement(Start, define(Name, Arguments, Type, Value) at Start, Ops) -->
+define_statement(Start, Definition at Start, Ops) -->
     valid_variable_name(Name),
     !,
     formal_parameters(Arguments),
@@ -91,10 +91,14 @@ define_statement(Start, define(Name, Arguments, Type, Value) at Start, Ops) -->
     expected_token(Start, op('='), 'assignment operator', _),
     peek(_ at ExprStart),
     expression_top_level(ExprStart, Value, Ops),
-    expected_token(Start, keyword(end), 'end keyword', _).
+    expected_token(Start, keyword(end), 'end keyword', _),
+    { 
+        desugar_function_definition(
+            define(Name, Arguments, Type, Value), Definition
+        ) 
+    }.
 define_statement(Start, _, _) -->
     { throw(error('Syntax error in definition', []) at Start) }.
-
 
 valid_variable_name(wildcard) -->
     [keyword('_') at _],
@@ -116,6 +120,14 @@ formal_parameters([Param | Params]) -->
     formal_parameters(Params).
 formal_parameters([]) --> [].
 
+desugar_function_definition(
+    define(Name, [], Type, Value),
+    define(Name, Type, Value)
+) :- !.
+desugar_function_definition(
+    define(Name, Args, Type, Value),
+    define(Name, Type, lambda(Args, Value))
+).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -386,9 +398,6 @@ expression(Conditional, Operators) -->
     conditional_expression(Start, Conditional, Operators).
 expression(Tuple, Operators) -->    
     tuple_expression(Tuple, Operators).
-% TODO: consider changing tuple priority to be
-%       lower than other expression types in 
-%       expression(...) rule
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
