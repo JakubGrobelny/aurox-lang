@@ -1,10 +1,24 @@
-:- [lexer].
+:- ensure_loaded(lexer).
+:- ensure_loaded(imports).
 
 parse_file(FileName, AST) :-
+    parse_file(FileName, AST, pos(FileName,0,0), [], _, _).
+
+parse_file(FileName, AST, Start, Imported, NewDeps, NewOperators) :-
+    % TODO: add file opening error handling
     tokenize_file(FileName, Tokens),
     empty_operator_list(Operators),
     catch(
-        phrase(program(AST, Operators, _), Tokens),
+        phrase(
+            program(
+                AST, 
+                Operators, 
+                NewOperators, 
+                [file_name(FileName) at Start | Imported],
+                NewDeps
+            ), 
+            Tokens
+        ),
         error(Format, Args) at Pos,
         print_error_and_halt(Pos, Format, Args)
     ).
@@ -15,32 +29,43 @@ parse_file(FileName, AST) :-
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-program(Program, OldOperators, FinalOperators) -->
+program(Program, OldOperators, FinalOperators, Deps, NewDeps) -->
     [keyword(defop) at DefOpStart],
     !,
     operator_definition(DefOpStart, OldOperators, NewOperators),
-    program(Program, NewOperators, FinalOperators).
-program([Import | Program], Operators, Operators) -->
+    program(Program, NewOperators, FinalOperators, Deps, NewDeps).
+program(DepsAST, Operators, NewOperators, Deps, NewDeps) -->
     [keyword(import) at ImportStart],
     !,
-    import_statement(ImportStart, Import),
-    program(Program, Operators, Operators).
-program([Definition | Program], Operators, Operators) -->
+    import_statement(ImportStart, Files),
+    { 
+        import_dependencies(
+            Files, % contents of the import statement
+            Deps,   % already imported modules
+            DepsOperators, % operators defined in dependencies
+            UpdatedDeps, % list of imported modules after this import
+            DepsAST, % AST of imported dependencies with Program as tail
+            Program % uninstantiated variable used to append rest of the program
+        ),
+        merge_operators(Operators, DepsOperators, MergedOperators)
+    },
+    program(Program, MergedOperators, NewOperators, UpdatedDeps, NewDeps).
+program([Definition | Program], Operators, NewOperators, Deps, NewDeps) -->
     [keyword(define) at DefineStart],
     !,
     define_statement(DefineStart, Definition, Operators),
-    program(Program, Operators, Operators).
-program([TypeDefinition | Program], Operators, Operators) -->
+    program(Program, Operators, NewOperators, Deps, NewDeps).
+program([TypeDefinition | Program], Operators, NewOperators, Deps, NewDeps) -->
     [keyword(type) at TypeDefStart],
     !,
     type_definition(TypeDefStart, TypeDefinition),
-    program(Program, Operators, Operators).
-program([Expression | Program], Operators, Operators) -->
+    program(Program, Operators, NewOperators, Deps, NewDeps).
+program([Expression | Program], Operators, NewOperators, Deps, NewDeps) -->
     peek(_ at ExprStart),
     !,
     expression_top_level(ExprStart, Expression, Operators),
-    program(Program, Operators, Operators).
-program([], Operators, Operators) --> [].
+    program(Program, Operators, NewOperators, Deps, NewDeps).
+program([], Operators, Operators, Deps, Deps) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -48,7 +73,7 @@ program([], Operators, Operators) --> [].
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-import_statement(Start, import(Files)) -->
+import_statement(Start, Files) -->
     list_of_files_to_import(Start, Files),
     expected_token(Start, keyword(end), 'end keyword', _).
 
@@ -232,71 +257,6 @@ operator_definition(Start, _, _) -->
 operator(Op, Priority, Assoc, Pos, Ops, NOps) -->
     [op(Op) at Pos],
     { define_operator_if_needed(Op, Priority, Assoc, Ops, NOps) }.
-
-define_operator_if_needed(Op, Priority, Assoc, Ops, Ops) :-
-    is_operator_type(Op, Priority, Assoc, Ops),
-    !.
-define_operator_if_needed(Op, 10, Assoc, ops(I, P), NOps) :-
-    member(Assoc, [left, none, right]),
-    \+ get_dict(Op, I, _),
-    \+ get_dict(Op, P, _),
-    !,
-    update_operators(Op, 10, left, ops(I, P), NOps).
-
-valid_priority(N, _) :-
-    between(0, 20, N),
-    !.
-valid_priority(N, Pos) :-
-    throw(
-        error('Invalid operator prority ~w in operator declaration', [N]) at Pos
-    ).
-
-valid_associativity(Assoc, _) :-
-    member(Assoc, [left, right, none, left_unary, right_unary]),
-    !.
-valid_associativity(Assoc, Pos) :-
-    throw(
-        error(
-            'Invalid operator associativity type ~w in operator declaration.\c,
-             Allowed types are left, right, none, left_unary and right_unary', 
-            [Assoc]
-        ) at Pos
-    ).
-
-empty_operator_list(ops(Infix, PostPrefix)) :-
-    dict_create(Infix, infix, []),
-    dict_create(PostPrefix, postprefix, []).
-
-infix(Assoc) :-
-    member(Assoc, [left, right, none]).
-
-update_operators(
-    Op, 
-    Priority, 
-    Assoc, 
-    ops(Infix, PostPrefix), 
-    ops(NewInfix, PostPrefix)
-) :-
-    infix(Assoc),
-    !,
-    put_dict(Op, Infix, (Priority, Assoc), NewInfix).
-update_operators(
-    Op, 
-    Priority, 
-    UnaryAssoc, 
-    ops(Infix, PostPrefix), 
-    ops(Infix, NewPostPrefix)
-) :-
-    put_dict(Op, PostPrefix, (Priority, UnaryAssoc), NewPostPrefix).
-
-is_operator_type(Op, Priority, Assoc, ops(Infix, _)) :-
-    member(Assoc, [left, right, none]),
-    !,
-    get_dict(Op, Infix, (Priority, Assoc)).
-is_operator_type(Op, Priority, UnaryAssoc, ops(_, PostPrefix)) :-
-    !,
-    get_dict(Op, PostPrefix, (Priority, UnaryAssoc)).
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %

@@ -1,5 +1,4 @@
 :- [utility].
-:- op(200, xfx, at).
 
 char_codes_to_atoms([], []) :-
     !.

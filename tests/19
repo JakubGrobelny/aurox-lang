@@ -1,0 +1,24 @@
+import
+    Module1
+    Module2
+    "file1"
+    Module3
+    "file2"
+end
+
+import
+    Module2
+    Module4
+end
+
+import
+    "file1"
+    "file2"
+    "file3"
+end
+
+import
+    Module1
+    Module42
+    "file42"
+end
