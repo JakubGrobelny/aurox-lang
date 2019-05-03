@@ -227,9 +227,9 @@ define_operator_if_needed(Op, Priority, Assoc, Ops, Ops) :-
 define_operator_if_needed(Op, _, Assoc, ops(I, P), NOps) :-
     member(Assoc, [left, none, right]),
     \+ get_dict(Op, I, _),
+    \+ get_dict(Op, P, _),
     !,
     update_operators(Op, 10, left, ops(I, P), NOps).
-
 
 valid_priority(N, _) :-
     between(0, 20, N),
