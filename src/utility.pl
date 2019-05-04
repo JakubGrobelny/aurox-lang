@@ -1,18 +1,17 @@
 :- op(200, xfx, at).
 
-print_error(pos(FileName, L, C), MessageFormat, MessageArgs) :-
+print_colored_message(pos(F, L, C), MsgFormat, MsgArgs, Color, Title) :-
     atomic_list_concat(
-        ['~w:~w:~w \u001b[31;1merror:\x1B[0m ', MessageFormat, '\n'],
+        ['~w:~w:~w ', Color, Title, ':\x1B[0m ', MsgFormat, '\n'],
         FinalFormat
     ),
-    format(FinalFormat, [FileName, L, C | MessageArgs]).
+    format(FinalFormat, [F, L, C | MsgArgs]).
 
-print_warning(pos(FileName, L, C), MessageFormat, MessageArgs) :-
-    atomic_list_concat(
-        ['~w:~w:~w \u001b[33;1mwarning:\x1B[0m ', MessageFormat, '\n'],
-        FinalFormat
-    ),
-    format(FinalFormat, [FileName, L , C | MessageArgs]).
+print_warning(Pos, MsgFormat, MsgArgs) :-
+    print_colored_message(Pos, MsgFormat, MsgArgs, '\u001b[33;', 'warning').
+
+print_error(Pos, MsgFormat, MsgArgs) :-
+    print_colored_message(Pos, MsgFormat, MsgArgs, '\u001b[31;', 'error').
 
 print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
     print_error(Pos, MsgFormat, MsgArgs),

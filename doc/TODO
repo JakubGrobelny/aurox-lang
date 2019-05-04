@@ -2,3 +2,5 @@
 2. fix repl
 3. change unary/binary operator names so that they are separate functions
 4. absolute filenames using unix(argv(Argv))
+5. enum(C) vs adt(C, []).
+6. change param(a) into prolog variables in type signatures

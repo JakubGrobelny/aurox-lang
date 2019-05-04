@@ -471,11 +471,16 @@ constant(unit) -->
 constant(float(X)) -->
     [float(X) at _],
     !.
-constant(string(Str)) -->
+constant(list(StrChars)) -->
     [string(Str) at _],
-    !.
+    !,
+    { map_char(Str, StrChars) }.
 constant(char(C)) -->
     [char(C) at _].
+
+map_char([], []) :- !.
+map_char([C | Cs], [char(C) | Chars]) :-
+    map_char(Cs, Chars).
 
 merge_expr(Lhs, [Op, Rhs], app(app(id(Op), Lhs), Rhs)) :-
     !.
@@ -492,24 +497,24 @@ lambda_param_list(Start, Params) -->
     formal_parameters(Params),
     expected_token(Start, op('|'), 'lambda parameter list delimiter', _).
 
-list_expression(_, list([], []), _) -->
+list_expression(_, list([]), _) -->
     [']' at _],
     !.
-list_expression(Start, list([H | T], Tail), Operators) -->
+list_expression(Start, list([H | T]), Operators) -->
     list_element(Start, H, Operators),
     !,
-    list_expression_tail(Start, list(T, Tail), Operators).
-list_expression_tail(Start, list([], Tail), Operators) -->
+    list_expression_tail(Start, list(T), Operators).
+list_expression_tail(Start, list(Tail), Operators) -->
     [op('|') at _],
     !,
     list_element(Start, Tail, Operators),
     expected_token(Start, ']', 'closing square bracket', _).
-list_expression_tail(Start, list([H | T], Tail), Operators) -->
+list_expression_tail(Start, list([H | T]), Operators) -->
     [',' at _],
     !,
     list_element(Start, H, Operators),
-    list_expression_tail(Start, list(T, Tail), Operators).
-list_expression_tail(Start, list([], []), _) -->
+    list_expression_tail(Start, list(T), Operators).
+list_expression_tail(Start, list([]), _) -->
     expected_token(Start, ']', 'closing square bracket', _).
 list_element(_, Elem, Operators) -->
     expr_n(0, Elem, Operators),
@@ -523,7 +528,7 @@ atomic_expression(Lambda, Operators) -->
 atomic_expression(Const, _) -->
     constant(Const),
     !.
-atomic_expression(constructor(Constructor) ,_) -->
+atomic_expression(id(Constructor),_) -->
     [tid(Constructor) at _],
     !.
 atomic_expression(Var, _) -->
@@ -600,11 +605,11 @@ pattern_matching_cases(Start, [Case | Cases], Operators) -->
     pattern_matching_cases(Start, Cases, Operators).
 pattern_matching_cases(_, [], _) --> [].
 
-pattern_matching_case(Start, '=>'(Pattern, Expr), Operators) -->
-    [keyword(case) at _],
-    pattern_guard(Start, Pattern),
-    expected_token(Start, op('=>'), '=> operator', _),
-    expression_top_level(Start, Expr, Operators).
+pattern_matching_case(_, '=>'(Pattern, Expr), Operators) -->
+    [keyword(case) at CaseStart],
+    pattern_guard(CaseStart, Pattern),
+    expected_token(CaseStart, op('=>'), '=> operator', _),
+    expression_top_level(CaseStart, Expr, Operators).
 
 pattern_guard(_, Pattern) -->
     pattern(Pattern),
@@ -624,18 +629,21 @@ pattern_tail([P | Ps]) -->
 pattern_tail([]) --> [].
 
 deconstructor_pattern(Pattern) -->
-    atomic_pattern(Pattern),
-    !.
-deconstructor_pattern(Pattern) -->
     [tid(Constructor) at _],
+    !,
     deconstructor_pattern_argument(Constructor, Pattern).
+deconstructor_pattern(Pattern) -->
+    atomic_pattern(Pattern).
 deconstructor_pattern_argument(Constructor, adt(Constructor, Argument)) -->
     atomic_pattern(Argument),
     !.
-deconstructor_pattern_argument(Constructor, Constructor) --> [].
+deconstructor_pattern_argument(Constructor, enum(Constructor)) --> [].
 
 atomic_pattern(Pattern) -->
     valid_variable_name(Pattern),
+    !.
+atomic_pattern(enum(Enum)) -->
+    [tid(Enum) at _],
     !.
 atomic_pattern(Pattern) -->
     ['(' at _],
@@ -649,21 +657,21 @@ atomic_pattern(Pattern) -->
 atomic_pattern(Const) -->
     constant(Const).
 
-list_pattern(list([], [])) -->
+list_pattern(list([])) -->
     [']' at _],
     !.
-list_pattern(list([H | T], Tail)) -->
+list_pattern(list([H | T])) -->
     deconstructor_pattern(H),
-    list_pattern_tail(list(T, Tail)).
-list_pattern_tail(list([H | T], Tail)) -->
+    list_pattern_tail(list(T)).
+list_pattern_tail(list([H | T])) -->
     [',' at _],
     !,
     deconstructor_pattern(H),
-    list_pattern_tail(list(T, Tail)).
-list_pattern_tail(list([], [])) -->
+    list_pattern_tail(list(T)).
+list_pattern_tail(list([])) -->
     [']' at _],
     !.
-list_pattern_tail(list([], Tail)) -->
+list_pattern_tail(list(Tail)) -->
     [op('|') at _],
     valid_variable_name(Tail),
     [']' at _].

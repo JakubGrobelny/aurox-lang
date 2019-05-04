@@ -1,0 +1,10 @@
+type Nat with
+    case Zero
+    case Succ Nat
+end
+
+match Succ (Succ Zero) with
+    case Zero => true
+    case Succ (Zero) => true
+    case Succ (Succ Zero) => false
+end

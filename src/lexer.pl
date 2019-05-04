@@ -299,11 +299,8 @@ lexer([char(Char) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
 lexer([string(Str) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     string_delimiter,
     !,
-    char_sequence(StrChars, Len),
-    { 
-        NC is C + Len + 2,
-        atomic_list_concat(StrChars, Str)
-    },
+    char_sequence(Str, Len),
+    { NC is C + Len + 2 },
     string_terminator(Str, pos(F, L, C)),
     lexer(Tokens, pos(F, L, NC)).
 lexer(_, Pos) -->

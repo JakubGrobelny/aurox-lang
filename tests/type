@@ -1,15 +1,35 @@
 defop - 10 left
 
 define (-) a b : Int -> Int =
-    a - b
+    __sub a b
 end
 
 define f x :=
     g x - 1
 end
 
-define g x :=
-    f (x - 1)
+define g y :=
+    f (y - 1)
 end
 
 # correct result: f :: Int -> Int, g :: Int -> Int
+
+# simulation:
+
+# x :: a
+# f :: a -> b
+# g :: c -> d
+# y :: c
+# b = Int
+# ------------
+# x :: a
+# f :: a -> Int
+# c = a
+# d = Int
+# g :: a -> Int 
+# y :: Int
+# a = Int
+# 
+# f :: Int -> Int
+# g :: Int -> Int
+# 
