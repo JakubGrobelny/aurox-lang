@@ -1,0 +1,12 @@
+define x : Int = 42 end
+
+define y := f 10 end
+
+type Maybe a with
+    case Nothing
+    case Just a
+end
+
+type IO a with
+    case IO (World -> (a, World))
+end

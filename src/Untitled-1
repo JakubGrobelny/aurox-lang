@@ -1,0 +1,14 @@
+type OneOrTwo a b where
+    case One a
+    case Two (a, b)
+end
+
+One :: a -> OneOrTwo a b
+Two :: (a, b) -> OneorTwo a b
+
+define One x : a -> OneOrTwo b =
+    
+    adt(One, x)
+end
+
+

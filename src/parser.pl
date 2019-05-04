@@ -131,15 +131,10 @@ valid_variable_name(Id) -->
     valid_identifier(Id).
 
 valid_identifier(id(Name)) -->
-    [id(Name) at _],
-    !.
-valid_identifier(op(Op)) -->
-    ['(' at _],
-    [op(Op) at _],
-    [')' at _].
+    [id(Name) at _].
 
 formal_parameters([Param | Params]) -->
-    valid_variable_name(Param),
+    valid_variable_name(id(Param)),
     !,
     formal_parameters(Params).
 formal_parameters([]) --> [].
@@ -159,7 +154,7 @@ desugar_function_definition(
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-type_definition(Start, typedef(Name, Params, Constructors)) -->
+type_definition(Start, typedef(Name, Params, Constructors) at Start) -->
     type_name(Start, Name),
     type_definition_params(Start, Params),
     expected_token(Start, keyword(with), 'with keyword', _),
