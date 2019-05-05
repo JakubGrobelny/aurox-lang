@@ -2,91 +2,71 @@
 :- ensure_loaded(environment).
 
 
-infer_type(Env, int(_), adt('Int', []), _, Env) :- !.
-infer_type(Env, float(_), adt('Float', []), _, Env) :- !.
-infer_type(Env, unit, adt('Unit', []), _, Env) :- !.
-infer_type(Env, bool(_), adt('Bool', []), _, Env) :- !.
-infer_type(Env, char(_), adt('Char', []), _, Env) :- !.
-infer_type(Env, list([]), list(_), _, Env) :- !.
-infer_type(Env, list([H | T]), list(Type), Start, FinalEnv) :-
-    infer_type(Env, H, Type, Start, NewEnv),
-    typecheck_list(NewEnv, T, Type, Start, FinalEnv).
-infer_type(Env, app(A, B), T, Start, FinalEnv) :-
-    infer_type(Env, A, TA, Start, NewEnv),
-    infer_type(NewEnv, B, TB, Start, FinalEnv),
-    typecheck_application(TA, TB, Start, T).
-infer_type(Env, if(Cond, Then, Else), T, Start, FinalEnv) :-
-    infer_type(Env, Cond, CondT, Start, CondEnv),
-    infer_type(CondEnv, Then, ThenT, Start, ThenEnv),
-    infer_type(ThenEnv, Else, ElseT, Start, FinalEnv),
-    typecheck_if(CondT, ThenT, ElseT, Start, T).
-infer_type(Env, Logical, adt('Bool', []), Start, FinalEnv) :-
-    Logical =.. [Op, Lhs, Rhs],
-    member(Op, [and, or]),
+% How to do type checking?
+% go through all variables in environment
+% keep a list of visited variables (not needed actually)
+% if type was defined, then try to prove it
+% else infer the type
+% inferrence failure -> error
+% type mismatch -> error 
+% type does not match the signature -> error
+
+typecheck_environment(env(Env, TEnv)) :-
+    dict_pairs(Env, _, Contents),
+    typecheck_environment(Contents, env(Env, TEnv)).
+
+typecheck_environment([], _, _) :- !.
+typecheck_environment([_-(Val at Pos, Type, _) | Vars], Env) :-
+    infer_type(Env, Val, Type, Pos),
     !,
-    infer_type(Env, Lhs, LhsT, Start, NewEnv),
-    infer_type(NewEnv, Rhs, RhsT, Start, FinalEnv),
-    typecheck_logical(LhsT, RhsT, Start).
-
-
-% TODO: add more cases
-
-typecheck_logical( adt('Bool', []), adt('Bool', []), _) :- !.
-typecheck_logical( Rhs, Lhs, Start) :-
-    print_type_error(
-        Start,
-        'operator ~w type mismatch in logical operator arguments.\c
-         Expected Bool and Bool, got ~w and ~w',
-        [Lhs, Rhs]
-    ).
-
-typecheck_if(adt('Bool', []), T, T, _, T) :- !.
-typecheck_if(adt('Bool', []), ThenT, ElseT, Start, _) :-
-    print_type_error(
-        Start,
-        'type mismatch in if expression.\c
-         Type ~w of consequence does not match the type ~w of alternative',
-        [ThenT, ElseT]
-    ).
-typecheck_if(CondT, _, _, Start, _) :-
-    print_type_error(
-        Start,
-        'invalid type of conditional expression.\c
-         Expected Bool, got ~w',
-        [CondT]
-    ).
-
-typecheck_application(A->B, A, _, B) :- !.
-typecheck_application(FunT, ArgT, Start, _) :-
-    print_type_error(
-        Start,
-        'type mismatch in function application.\c
-         Expression of type ~w can\'t be applied to expression of type ~w',
-         [FunT, ArgT]
-    ).
-
-typecheck_list(Env, [], _, _, Env) :- !.
-typecheck_list(Env, [H | T], Type, Start, FinalEnv) :-
-    infer_type(Env, H, Type, Start, NewEnv),
+    typecheck_environment(Vars, Env).
+% TODO: case when Var is a Constructor
+typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
+    \+ var(Type),
+    infer_type(Env, Val, ValType, Pos),
     !,
-    typecheck_list(NewEnv, T, Type, Start, FinalEnv).
-typecheck_list(Env, [H| _], Type, Start, _) :-
-    infer_type(Env, H, HType, Start, _),
     print_type_error(
-        Start,
-        'type mismatch in a list.\c 
-         Expected [~w] but it contains element of type ~w',
-         [Type, HType]
+        ValPos,
+        'The type ~w of expression does not match the type annotation ~w specified\c
+         in the definition of ~w',
+        [type(ValType), type(Type), Var]
     ).
+typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
+    print_type_error(
+        ValPos,
+        'the type of value of ~w couldn\'t have been inferred',
+        [Var]
+    ).
+
+infer_type(env(Env, _), id(Var), ExpectedType, _) :-
+    get_dict(Var, Env, (_, Type, _)),
+    \+ var(Type),
+    !,
+    copy_term(Type, ExpectedType).
+infer_type(env(Env, TEnv), id(Var), ExpectedType, _) :-
+    get_dict(Var, Env, (Val, Type, DefPos)),
+    !,
+    infer_type(env(Env, TEnv), Val, Type, DefPos),
+    copy_term(Type, ExpectedType).
+infer_type(_, int(_), adt('Int', []), _) :- !.
+infer_type(_, float(_), adt('Float', []), _) :- !.
+infer_type(_, char(_), adt('Char', []), _) :- !.
+infer_type(_, bool(_), adt('Bool', []), _) :- !.
+infer_type(_, unit, adt('Unit', []), _) :- !.
+
 
 print_type_error(Start, MsgFormat, MsgArgs) :-
     prettify_types(MsgArgs, Prettified),
     print_error_and_halt(Start, MsgFormat, Prettified).
 
 prettify_types([], []) :- !.
-prettify_types([T | Ts], [PT | PTs]) :-
+prettify_types([type(T) | Ts], [PT | PTs]) :-
+    !,
     prettify_type(T, PT),
     prettify_types(Ts, PTs).
+prettify_types([Anything | Ts], [Anything | PTs]) :-
+    prettify_types(Ts, PTs).
+
 
 prettify_type(X, X) :- !. % TODO: implement
 
