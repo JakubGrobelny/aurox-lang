@@ -221,7 +221,7 @@ type_definition_constructor_type(_, _) -->
             Token
         )
     }.
-type_definition_constructor_type(_, undefined) --> [].
+type_definition_constructor_type(_, none) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -261,7 +261,7 @@ operator(Op, Priority, Assoc, Pos, Ops, NOps) -->
 type(Type) -->
     tuple_type(Type),
     !.
-type(undefined) --> [].
+type(_) --> [].
 
 tuple_type(Type) -->
     function_type(Left),
@@ -682,7 +682,7 @@ list_pattern_tail(list(Tail)) -->
 %                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-construct_tuple([], undefined) :- !.
+construct_tuple([], none) :- !.
 construct_tuple([X], X) :- !.
 construct_tuple(Xs, tuple(N, Tuple)) :-
     length(Xs, N),

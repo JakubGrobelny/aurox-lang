@@ -42,6 +42,12 @@ redefinition_warning(Name, Env, Where) :-
     ).
 redefinition_warning(_, _, _).
 
+get_variable_value(Var, Env, _, Val) :-
+    get_dict(Var, Env, Val),
+    !.
+get_variable_value(Var, _, Start, _) :-
+    print_error_and_halt(Start,'Undefined variable ~w',[Var]).
+
 fix_name(UnOp, Op) :-
     atomic_list_concat(['`' | Op], ' ', UnOp),
     !.
@@ -120,7 +126,7 @@ extract_params_constructors([constructor(_, T) | Constrs], Params) :-
 
 add_constructors_to_env([], _, Env, Env) :- !.
 add_constructors_to_env([Cons | Constrs], Place, Env, FinalEnv) :-
-    Cons =.. [_, CName, undefined],
+    Cons =.. [_, CName, none],
     !,
     add_cons_to_env(CName, Env, enum(CName), Place, NewEnv),
     add_constructors_to_env(Constrs, Place, NewEnv, FinalEnv).
@@ -141,7 +147,7 @@ add_cons_to_env(Name, Env, _, Where, _) :-
         [Name, F, L, C]
     ).
 add_cons_to_env(Name, Env, Val, Where, NewEnv) :-
-    put_dict(Name, Env, (Val, undefined, Where), NewEnv).
+    put_dict(Name, Env, (Val, _, Where), NewEnv).
 
 
 
