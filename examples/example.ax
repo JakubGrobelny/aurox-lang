@@ -99,3 +99,4 @@ defop · left 3
 define apply (·) a1 a2 :=
     a1 · a2
 end
+
