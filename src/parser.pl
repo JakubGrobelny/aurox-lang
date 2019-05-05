@@ -143,10 +143,20 @@ desugar_function_definition(
     define(Name, [], Type, Value),
     define(Name, Type, Value)
 ) :- !.
+desugar_function_definition(define(Name, Args, _, _ at Pos), _) :-
+    not_unique_list(Args, Arg),
+    !,
+    Name =.. [_, N],
+    print_error_and_halt(
+        Pos,
+        'definition of function ~w contains non unique parameter ~w',
+        [N, Arg]
+    ).
 desugar_function_definition(
     define(Name, Args, Type, Value),
     define(Name, Type, lambda(Args, Value))
 ).
+    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -490,6 +500,7 @@ lambda(lambda(Params, Expr), Operators) -->
     ['{' at Start],
     !,
     lambda_param_list(Start, Params),
+    { unique_lambda_parameters(Params, Start) },
     expression_top_level(Start, Expr, Operators),
     expected_token(Start, '}', 'closing curly bracket', _).
 lambda_param_list(Start, Params) -->
@@ -543,6 +554,16 @@ atomic_expression(List, Operators) -->
     ['[' at Start],
     !,
     list_expression(Start, List, Operators).
+
+unique_lambda_parameters(Params, Pos) :-
+    not_unique_list(Params, Param),
+    !,
+    print_error_and_halt(
+        Pos,
+        'function literal contains a non unique parameter ~w',
+        [Param]
+    ).
+unique_lambda_parameters(_, _).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %

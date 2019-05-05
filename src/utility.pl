@@ -17,6 +17,17 @@ print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
     print_error(Pos, MsgFormat, MsgArgs),
     halt.
 
+unique_list(Xs) :-
+    \+ not_unique_list(Xs, _).
+
+not_unique_list(Xs, Repeating) :-
+    msort(Xs, Ys),
+    not_unique_list_helper(Ys, Repeating).
+
+not_unique_list_helper([X, X | _], X) :- !.
+not_unique_list_helper([_ | Xs], X)  :-
+    not_unique_list_helper(Xs, X).
+
 print_term_tree(Term) :-
     print_term_tree(Term, 0).
 print_term_tree(Term, Indentation) :-

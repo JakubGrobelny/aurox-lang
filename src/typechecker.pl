@@ -1,16 +1,6 @@
 :- ensure_loaded(utility).
 :- ensure_loaded(environment).
 
-
-% How to do type checking?
-% go through all variables in environment
-% keep a list of visited variables (not needed actually)
-% if type was defined, then try to prove it
-% else infer the type
-% inferrence failure -> error
-% type mismatch -> error 
-% type does not match the signature -> error
-
 typecheck_environment(env(Env, TEnv)) :-
     dict_pairs(Env, _, Contents),
     typecheck_environment(Contents, env(Env, TEnv)).
@@ -38,6 +28,10 @@ typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
         [Var]
     ).
 
+
+infer_type(env(Env, _), id(Var), Type, _) :-
+    get_dict(Var, Env, (var, Type, _)),
+    !.
 infer_type(env(Env, _), id(Var), ExpectedType, _) :-
     get_dict(Var, Env, (_, Type, _)),
     \+ var(Type),
@@ -85,12 +79,27 @@ infer_type(env(Env, TEnv), let(Var, Type, Val at VPos, Expr at EPos), T, Pos) :-
     put_dict(Var, Env, (Val, ValT, VPos), NewEnv),
     infer_type(env(NewEnv, TEnv), Expr, ExprT, EPos),
     typecheck_let_def(T, ExprT, Pos).
+infer_type(env(Env, TEnv), lambda(Args, Expr), T, Pos) :-
+    construct_lambda_type(Args, LambdaType, Variables, Pos),
+    put_dict(Variables, Env, IntermediateEnv),
+    infer_type(env(IntermediateEnv, TEnv), Expr, LambdaType, Pos),
+    typecheck_function_type(T, LambdaType, Pos).
 
 % TODO:
-
-% lambdas
-% adts
 % pmatching
+% adts
+
+typecheck_function_type(T, T, _) :- !.
+typecheck_function_type(T0, T1, Pos) :-
+    print_type_error(
+        Pos,
+        'type mismatch in function literal, expected ~w, got ~w',
+        [type(T0), type(T1)]
+    ).
+
+construct_lambda_type([P], A->_, [P:(var, A, Pos)], Pos) :- !.
+construct_lambda_type([P | Ps], A->T, [P:(var, A, Pos) | Ts], Pos) :-
+    construct_lambda_type(Ps, T, Ts, Pos).
 
 typecheck_let_def(T, T, _) :- !.
 typecheck_let_def(T1, T0, Pos) :-
