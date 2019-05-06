@@ -662,7 +662,6 @@ pattern_matching_cases(_, [], _) --> [].
 pattern_matching_case(_, case(Pattern, Expr), Operators) -->
     [keyword(case) at CaseStart],
     pattern_guard(CaseStart, Pattern),
-    % { fix_pattern(Pattern, FixedPattern) },
     expected_token(CaseStart, op('=>'), '=> operator', _),
     expression_top_level(CaseStart, Expr, Operators).
 

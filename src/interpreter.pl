@@ -2,7 +2,6 @@
 :- ensure_loaded(typechecker).
 :- ensure_loaded(environment).
 
-
 interpret_program(EntryPoint) :-
     parse_file(EntryPoint, AST),
     process_definitions(AST, _, Env),

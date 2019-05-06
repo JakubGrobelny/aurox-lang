@@ -1,6 +1,0 @@
-type Maybe a b with
-    case Nothing
-    case Just (a, b)
-end
-
-

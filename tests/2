@@ -1,6 +1,0 @@
-defop % 20 postfix
-defop ! 19 postfix
-defop - 19 prefix
-defop - 11 left
-
--2! - 3%

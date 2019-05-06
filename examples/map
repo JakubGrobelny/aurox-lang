@@ -1,10 +1,6 @@
-defop * 15 left
-
-define map f xs : (a -> b) -> [a] -> [b] =
+define map f xs :=
     match xs with
         case [] => []
         case [x | xs] => [f x | map f xs]
     end
 end
-
-map {|x| x*x} [1,2,3,4]

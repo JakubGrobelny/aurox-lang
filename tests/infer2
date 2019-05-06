@@ -1,5 +1,0 @@
-define xs := [1,2,3,4] end
-
-define append_to_xs a :=
-    [a | xs]
-end

@@ -1,3 +1,0 @@
-match xs with
-    case 1,2 => xs
-end
