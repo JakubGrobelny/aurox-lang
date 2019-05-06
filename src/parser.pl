@@ -173,7 +173,6 @@ desugar_function_definition(
     define(Name, Args, Type, Value at Pos),
     define(Name, Type, lambda(Args, Value) at Pos)
 ).
-    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -277,7 +276,10 @@ operator_definition(Start, _, _) -->
 
 operator(Op, Priority, Assoc, Pos, Ops, NOps) -->
     [op(Op) at Pos],
-    { define_operator_if_needed(Op, Priority, Assoc, Ops, NOps) }.
+    { 
+        \+ member(Op, ['|']),
+        define_operator_if_needed(Op, Priority, Assoc, Ops, NOps) 
+    }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -327,7 +329,7 @@ atomic_type_sequence([]) --> [].
 atomic_type(param(Id)) -->
     [id(Id) at _],
     !.
-atomic_type(name(Name)) -->
+atomic_type(adt(Name, [])) -->
     [tid(Name) at _],
     !.
 atomic_type(list(Type)) -->
@@ -518,7 +520,7 @@ lambda(lambda(Params, Expr), Operators) -->
     !,
     lambda_param_list(Start, Params),
     { unique_lambda_parameters(Params, Start) },
-    expression_top_level(Start, Expr, Operators),
+    expression_top_level(Start, Expr at _, Operators),
     expected_token(Start, '}', 'closing curly bracket', _).
 lambda_param_list(Start, Params) -->
     expected_token(Start, op('|'), 'lambda parameter list delimiter', _),
@@ -544,6 +546,7 @@ list_expression_tail(Start, list([H | T]), Operators) -->
     list_expression_tail(Start, list(T), Operators).
 list_expression_tail(Start, list([]), _) -->
     expected_token(Start, ']', 'closing square bracket', _).
+
 list_element(_, Elem, Operators) -->
     expr_n(0, Elem, Operators),
     !.

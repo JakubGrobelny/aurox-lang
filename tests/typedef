@@ -1,0 +1,5 @@
+type Natural with
+    case Zero
+    case Succ Natural
+end
+

@@ -17,12 +17,10 @@ define (+) a b : Int -> Int -> Int =
     a
 end
 
-define f x y :=
-    -(x - y)
+define f x :=
+    g x - 1
 end
 
-define g x : a -> b =
-    g x
+define g x :=
+    f (x - 1)
 end
-
-

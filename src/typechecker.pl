@@ -9,17 +9,19 @@ typecheck_environment(env(Env, TEnv)) :-
 typecheck_environment([], _) :- !.
 typecheck_environment([_-(Val at Pos, Type, _) | Vars], Env) :-
     infer_type(Env, Val, Type, Pos),
+    \+ var(Type),
     !,
     typecheck_environment(Vars, Env).
 % TODO: case when Var is a Constructor
 typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     infer_type(Env, Val, ValType, Pos),
+    \+ var(ValType),
     !,
     print_type_error(
         ValPos,
-        'The type ~w of expression does not match the type\c 
+        'The type ~w of expression ~w does not match the type \c 
          annotation ~w specified in the definition of ~w',
-        [type(ValType), type(Type), Var]
+        [type(ValType), Val, type(Type), Var]
     ).
 typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
     !,
@@ -30,17 +32,31 @@ typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
     ).
 
 infer_type(env(Env, _), id(Var), Type, _) :-
+    get_dict(Var, Env, (var, PrevType, Pos)),
+    \+ var(PrevType),
+    PrevType = rec,
+    !,
+    b_set_dict(Var, Env, (var, Type, Pos)).
+infer_type(env(Env, _), id(Var), Type, _) :-
     get_dict(Var, Env, (var, Type, _)),
     !.
+infer_type(env(Env, _), id(Var), Type, _) :-
+    get_dict(Var, Env, (Val, PrevType, DefPos)),
+    \+ var(PrevType),
+    PrevType = rec,
+    !,
+    b_set_dict(Var, Env, (Val, Type, DefPos)).
 infer_type(env(Env, _), id(Var), ExpectedType, _) :-
     get_dict(Var, Env, (_, Type, _)),
     \+ var(Type),
     !,
     copy_term(Type, ExpectedType).
 infer_type(env(Env, TEnv), id(Var), ExpectedType, _) :-
-    get_dict(Var, Env, (Val at _, Type, DefPos)),
+    get_dict(Var, Env, (Val at Pos, Type, DefPos)),
+    b_set_dict(Var, Env, (Val at Pos, rec, DefPos)),
     !,
-    infer_type(env(Env, TEnv), Val, Type, DefPos),
+    infer_type(env(Env, TEnv), Val, InferredType, DefPos),
+    typecheck_rec(InferredType, Type, Env, Var, Val at Pos, DefPos),
     copy_term(Type, ExpectedType).
 infer_type(_, int(_), adt('Int', []), _) :- !.
 infer_type(_, float(_), adt('Float', []), _) :- !.
@@ -89,6 +105,10 @@ infer_type(env(Env, TEnv), lambda(Args, Expr), T, Pos) :-
 % pmatching
 % adts
 
+typecheck_rec(rec, _, _, _, _, _) :- !, fail.
+typecheck_rec(Inferred, Inferred, Env, Var, Val, Pos) :-
+    b_set_dict(Var, Env, (Val, Inferred, Pos)).
+
 typecheck_function_type(T, T, _) :- !.
 typecheck_function_type(T0, T1, Pos) :-
     print_type_error(
@@ -118,16 +138,27 @@ typecheck_tuple(Env, N, (E, Es), (ET, EsT), Pos) :-
     typecheck_tuple(Env, M, Es, EsT, Pos).
 
 typecheck_list(_, _, [], _) :- !.
+
 typecheck_list(Env, ExpectedType, [H | T], Pos) :-
     infer_type(Env, H, ExpectedType, Pos),
     !,
     typecheck_list(Env, ExpectedType, T, Pos).
+typecheck_list(Env, ExpectedType, Tail, Pos) :-
+    infer_type(Env, Tail, list(ExpectedType), Pos),
+    !.
 typecheck_list(Env, ExpectedType, [H | _], Pos) :-
     infer_type(Env, H, HType, Pos),
     print_type_error(
         Pos,
-        'type mismatch between list of type ~w and the list tail of type ~w',
+        'type mismatch between list of type ~w and the list element of type ~w',
         [type(ExpectedType), type(HType)]
+    ).
+typecheck_list(Env, ExpectedType, Tail, Pos) :-
+    infer_type(Env, Tail, TailType, Pos),
+    print_type_error(
+        Pos,
+        'type mismatch between list of type ~w and the list tail of type ~w',
+        [type(ExpectedType), type(TailType)]
     ).
 
 typecheck_if(adt('Bool', []), T, T, T, _) :- !.
