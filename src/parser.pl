@@ -107,7 +107,7 @@ file_name_to_import(_, _) -->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 define_statement(Start, Definition at Start, Ops) -->
-    valid_variable_name(Name),
+    valid_function_name(Name),
     !,
     formal_parameters(Arguments),
     expected_token(Start, ':', colon, _),
@@ -123,6 +123,14 @@ define_statement(Start, Definition at Start, Ops) -->
     }.
 define_statement(Start, _, _) -->
     { throw(error('Syntax error in definition', []) at Start) }.
+
+valid_function_name(Name) -->
+    valid_identifier(Name),
+    !.
+valid_function_name(op(Name)) -->
+    ['(' at _],
+    [op(Name) at _],
+    [')' at _].
 
 valid_variable_name(wildcard) -->
     [keyword('_') at _],
@@ -140,6 +148,15 @@ formal_parameters([Param | Params]) -->
 formal_parameters([]) --> [].
 
 desugar_function_definition(
+    define(op(Op), [Arg], Type, Value at Pos),
+    define(id(UnOp), Type, lambda([Arg], Value) at Pos)
+) :-
+    !,
+    mark_unary_operator(Op, UnOp).
+desugar_function_definition(define(op(Op), Args, Type, Val), Desugared) :-
+    !,
+    desugar_function_definition(define(id(Op), Args, Type, Val), Desugared).
+desugar_function_definition(
     define(Name, [], Type, Value),
     define(Name, Type, Value)
 ) :- !.
@@ -153,8 +170,8 @@ desugar_function_definition(define(Name, Args, _, _ at Pos), _) :-
         [N, Arg]
     ).
 desugar_function_definition(
-    define(Name, Args, Type, Value),
-    define(Name, Type, lambda(Args, Value))
+    define(Name, Args, Type, Value at Pos),
+    define(Name, Type, lambda(Args, Value) at Pos)
 ).
     
 

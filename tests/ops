@@ -1,0 +1,7 @@
+defop * 15 left
+defop + 10 left
+defop ^ 20 right
+defop - 10 left
+defop - 20 left_unary
+
+-1+2^4*3 - a

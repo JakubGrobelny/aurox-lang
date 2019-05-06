@@ -136,7 +136,7 @@ add_constructors_to_env([Cons | Constrs], Place, Env, FinalEnv) :-
     add_cons_to_env(CName, Env, Lambda, Place, NewEnv),
     add_constructors_to_env(Constrs, Place, NewEnv, FinalEnv).
 
-lambda_from_constructor(Cons, lambda([x], adt(Cons, id(x) at Place)), Place).
+lambda_from_constructor(Cons, lambda([x], adt(Cons, id(x))) at Place, Place).
 
 add_cons_to_env(Name, Env, _, Where, _) :-
     get_dict(Name, Env, (_, _, pos(F, L, C))),

@@ -8,14 +8,20 @@ print_colored_message(pos(F, L, C), MsgFormat, MsgArgs, Color, Title) :-
     format(FinalFormat, [F, L, C | MsgArgs]).
 
 print_warning(Pos, MsgFormat, MsgArgs) :-
-    print_colored_message(Pos, MsgFormat, MsgArgs, '\u001b[33;', 'warning').
+    print_colored_message(Pos, MsgFormat, MsgArgs, '\u001b[33m', 'warning').
 
 print_error(Pos, MsgFormat, MsgArgs) :-
-    print_colored_message(Pos, MsgFormat, MsgArgs, '\u001b[31;', 'error').
+    print_colored_message(Pos, MsgFormat, MsgArgs, '\u001b[31m', 'error').
 
 print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
-    print_error(Pos, MsgFormat, MsgArgs),
-    halt.
+    print_error(Pos, MsgFormat, MsgArgs).
+    % halt TODO:
+
+clean_defs([]) :-
+    nl, nl, !.
+clean_defs([define(Var, Type, Val at _) at _ | Defs]) :-
+    format('~w = ~w :: ~w\n', [Var, Val, Type]),
+    clean_defs(Defs).
 
 unique_list(Xs) :-
     \+ not_unique_list(Xs, _).

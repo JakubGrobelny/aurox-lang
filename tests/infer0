@@ -1,0 +1,28 @@
+# Some mockup definitions for plus 
+# and minus – the only thing that matter here are types
+
+defop + 10 left
+defop - 20 left_unary
+defop - 10 left
+
+define (-) a : Int -> Int =
+    a
+end
+
+define (-) a b : Int -> Int -> Int =
+    a
+end
+
+define (+) a b : Int -> Int -> Int =
+    a
+end
+
+define f x y :=
+    -(x - y)
+end
+
+define g x : a -> b =
+    g x
+end
+
+

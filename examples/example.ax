@@ -1,102 +1,28 @@
 import
     IO
-    "file.ax"
 end
 
-defop $ 0 right
+defop $ 1 right
 
-define ($) f x : (a -> b) -> a -> b = 
+define ($) f x :=
     f x
 end
 
-printf "1 + 2 = ~w" (1 + 2)
-
-define π : Float = 
-    3.14 
+type Maybe a with
+    case Just a
+    case Nothing
 end
 
-define π2 : Float = 
-    2 * π 
-end
-
-type Tree a with
-    case Leaf
-    case Node (Tree a, a, Tree a)
-end
-
-define map f xs : (a -> b) -> [a] -> [b] =
-    match xs with
-        case [] => []
-        case [x | xs] => [f x | map f xs]
+define div a b : Int -> Int -> Maybe Int =
+    if b = 0
+        then Nothing
+        else Just a/b
     end
 end
 
-define map f xs : (a -> b) -> [a] -> [b] =
-    match xs with
-        case [] => [] 
-        case [x | xs] => [f x | map f xs]
+define print_div_result a b : Int -> Int -> Unit =
+    match div a b with
+        case Nothing  => print "0"
+        case Just val => print $ to_string val
     end
 end
-
-define factorial n : Integer -> Integer =
-    match n with
-        case 0 => 1
-        case _ => n * factorial $ n - 1
-    end
-end
-
-define first tuple : (a, b) -> a =
-    match tuple with
-        case f, _ => f
-    end
-end
-
-define second tuple : (a, b) -> a =
-    match tuple with
-        case _, s => s
-    end
-end
-
-# lack of pattern matching in function parameters or let definitions
-define add_tuple tuple : (Integer, Integer) -> Integer =
-    let a : Integer = (first tuple) in
-        let b : Integer = (second tuple) in
-            a + b
-        end
-    end
-end
-        
-# alternative solution to the problem above
-define mult_tuple tuple : (Integer, Integer) -> Integer =
-    match tuple with
-        case (first, second) => first * second
-    end
-end
-
-printf "Hello, world" ()
-
-let square := {|x| x*x} in 
-    map square [1,2,3,4,5,6,7,8]
-end
-
-if (readint ()) == 10 
-    then printf "10" 
-    else printf "not 10"
-end
-
-defop |> left 1
-
-define (|>) x f :=
-    f x
-end
-
-define flip f a b :=
-    f b a 
-end
-
-defop · left 3
-
-define apply (·) a1 a2 :=
-    a1 · a2
-end
-
