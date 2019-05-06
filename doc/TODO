@@ -3,4 +3,5 @@
 4. absolute filenames using unix(argv(Argv))
 8. importing files with operators defined may not work correctly
    when multiple files import the same file which has the definitions
-
+9. fix Either a b -> Maybe a
+   issue: extract variables assigns whatever variables it wants

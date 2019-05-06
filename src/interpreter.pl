@@ -5,9 +5,9 @@
 
 interpret_program(EntryPoint) :-
     parse_file(EntryPoint, AST),
-    process_definitions(AST, Program, Env),
+    process_definitions(AST, _, Env),
     typecheck_environment(Env),
-    clean_defs(Program).
+    pretty_env(Env).
  
 process_definitions(AST, Program, Env) :-
     empty_env(EmptyEnv),

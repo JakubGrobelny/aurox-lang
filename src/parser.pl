@@ -1,5 +1,6 @@
 :- ensure_loaded(lexer).
 :- ensure_loaded(imports).
+:- ensure_loaded(patterns).
 
 parse_file(FileName, AST) :-
     parse_file(FileName, AST, pos(FileName,0,0), [], _, _).
@@ -661,6 +662,7 @@ pattern_matching_cases(_, [], _) --> [].
 pattern_matching_case(_, case(Pattern, Expr), Operators) -->
     [keyword(case) at CaseStart],
     pattern_guard(CaseStart, Pattern),
+    % { fix_pattern(Pattern, FixedPattern) },
     expected_token(CaseStart, op('=>'), '=> operator', _),
     expression_top_level(CaseStart, Expr, Operators).
 
@@ -727,7 +729,7 @@ list_pattern_tail(list([])) -->
 list_pattern_tail(list(Tail)) -->
     [op('|') at _],
     valid_variable_name(Tail),
-    [']' at _].
+    [']' at _].    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %

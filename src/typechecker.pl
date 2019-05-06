@@ -101,9 +101,11 @@ infer_type(Env, lambda(Args, Expr), T, Pos) :-
     infer_type(IntermediateEnv, Expr, ReturnType, Pos),
     typecheck_function_type(T, LambdaType, Pos).
 infer_type(_, wildcard, _, _) :- !.
-infer_type(Env, adt(Cons, _), TCopy, _) :-
-    get_dict(Cons, Env, (_, (_->T), _)),
-    copy_term(T, TCopy),
+infer_type(Env, adt(Cons, Arg), TCopy, Pos) :-
+    infer_type(Env, Arg, ArgType, Pos),
+    get_dict(Cons, Env, (_, (A->T), _)),
+    copy_term((A->T), (ACopy->TCopy)),
+    typecheck_adt_argument(ArgType, ACopy, Pos),
     !.
 infer_type(Env, enum(Cons), TCopy, _) :-
     get_dict(Cons, Env, (_, T, _)),
@@ -112,6 +114,14 @@ infer_type(Env, enum(Cons), TCopy, _) :-
 infer_type(Env, pmatch(Expr at EPos, Patterns), T, Pos) :-
     infer_type(Env, Expr, ExprT, EPos),
     typcheck_pmatching(Env, Patterns, ExprT, T, Pos).
+
+typecheck_adt_argument(T, T, _) :- !.
+typecheck_adt_argument(Got, Expected, Pos) :-
+    print_type_error(
+        Pos,
+        'constructor argument type mismatch, expected ~w, got ~w',
+        [type(Expected), type(Got)]
+    ).
 
 typcheck_pmatching(_, [], adt('Void', []), _, _) :- !.
 typcheck_pmatching(_, [], Type, _, Pos) :-
@@ -122,17 +132,18 @@ typcheck_pmatching(_, [], Type, _, Pos) :-
     ).
 typcheck_pmatching(Env, [case(P, E at CPos)], ExpectedType, T, _) :-
     !,
-    infer_type(Env, P, PT, CPos),
-    pattern_type_matches(ExpectedType, PT, CPos),
     extract_pattern_variables(P, Env, NewEnv, CPos),
+    infer_type(NewEnv, P, ExpectedType, CPos),
     infer_type(NewEnv, E, T, CPos).
+    % format('DEBUG: ~w,\n ~w\n ~w\n', [ExpectedType, NewEnv, T]).
+    % format('DEBUG: ~w :: ~w vs ~w\n', [P, PT, ExpectedType]).
 typcheck_pmatching(Env, [case(P, E at CPos)| Ps], ExpectedType, T, Pos) :-
-    infer_type(Env, P, PT, CPos),
-    pattern_type_matches(ExpectedType, PT, CPos),
-    extract_pattern_variables(P, Env, NewEnv, CPos),    
+    extract_pattern_variables(P, Env, NewEnv, CPos),
+    infer_type(NewEnv, P, ExpectedType, CPos),
     infer_type(NewEnv, E, T, CPos),
-    typcheck_pmatching(Env, Ps, ExpectedType, FinalType, Pos),
-    typecheck_pmatching_exprs(T, FinalType, CPos).
+    typcheck_pmatching(Env, Ps, ExpectedType, T, Pos).
+    % pattern_type_matches(ExpectedType, PT, CPos),
+    % typecheck_pmatching_exprs(T, FinalType, CPos).
 
 extract_pattern_variables(wildcard, Map, Map, _) :- !.
 extract_pattern_variables(id(A), Map, NewMap, Pos) :-
@@ -278,10 +289,10 @@ prettify_types([Anything | Ts], [Anything | PTs]) :-
 
 prettify_type(X, X) :- !. % TODO: implement
 
-extract_variables_from_type(none, []) :- !.
 extract_variables_from_type(Var, []) :-
     var(Var),
     !.
+extract_variables_from_type(none, []) :- !.
 extract_variables_from_type(param(A), [A]) :- !.
 extract_variables_from_type(name(_), []) :- !.
 extract_variables_from_type(adt(_, Parameters), FilteredParams) :-
@@ -300,10 +311,10 @@ extract_variables_from_type(T, Params) :-
     T =.. [_ | Args],
     extract_variables_from_type(Args, Params).
 
-map_variable_to_type(none, _, none) :- !.
 map_variable_to_type(Var, _, Var) :-
     var(Var),
     !.
+map_variable_to_type(none, _, none) :- !.
 map_variable_to_type(param(A), Map, Var) :-
     get_dict(A, Map, Var),
     !.

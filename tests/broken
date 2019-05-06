@@ -1,0 +1,10 @@
+type Wrapper a with
+    case Wrap a
+end
+
+define unwrap x :=
+    match x with
+        case Wrap a => a
+    end
+end
+

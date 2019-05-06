@@ -25,11 +25,14 @@ list_of_tuple((H, T), [H | Ts]) :-
     !.
 list_of_tuple(X, [X]).
 
-clean_defs([]) :-
-    nl, nl, !.
-clean_defs([define(Var, Type, Val at _) at _ | Defs]) :-
-    format('~w = ~w :: ~w\n', [Var, Val, Type]),
-    clean_defs(Defs).
+pretty_env(Env) :-
+    dict_pairs(Env, _, Pairs),
+    pretty_env_helper(Pairs).
+
+pretty_env_helper([]) :- nl, !.
+pretty_env_helper([Name-(_,T,_) | Defs]) :-
+    format('~w :: ~w\n', [Name, T]),
+    pretty_env_helper(Defs).
 
 unique_list(Xs) :-
     \+ not_unique_list(Xs, _).

@@ -1,0 +1,16 @@
+type Either a b with
+    case Left a
+    case Right b
+end
+
+type Maybe a with
+    case Nothing
+    case Just a
+end
+
+define rewrap x :=
+    match x with
+        case Left  a => Just a
+        case Right b => Just b
+    end
+end
