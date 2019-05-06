@@ -133,17 +133,17 @@ typcheck_pmatching(_, [], Type, _, Pos) :-
 typcheck_pmatching(Env, [case(P, E at CPos)], ExpectedType, T, _) :-
     !,
     extract_pattern_variables(P, Env, NewEnv, CPos),
-    infer_type(NewEnv, P, ExpectedType, CPos),
-    infer_type(NewEnv, E, T, CPos).
-    % format('DEBUG: ~w,\n ~w\n ~w\n', [ExpectedType, NewEnv, T]).
-    % format('DEBUG: ~w :: ~w vs ~w\n', [P, PT, ExpectedType]).
+    infer_type(NewEnv, P, PT, CPos),
+    pattern_type_matches(ExpectedType, PT, CPos),
+    infer_type(NewEnv, E, ET, CPos),
+    typecheck_pmatching_exprs(ET, T, CPos).
 typcheck_pmatching(Env, [case(P, E at CPos)| Ps], ExpectedType, T, Pos) :-
     extract_pattern_variables(P, Env, NewEnv, CPos),
-    infer_type(NewEnv, P, ExpectedType, CPos),
-    infer_type(NewEnv, E, T, CPos),
+    infer_type(NewEnv, P, PT, CPos),
+    pattern_type_matches(ExpectedType, PT, CPos),
+    infer_type(NewEnv, E, ET, CPos),
+    typecheck_pmatching_exprs(T, ET, CPos),
     typcheck_pmatching(Env, Ps, ExpectedType, T, Pos).
-    % pattern_type_matches(ExpectedType, PT, CPos),
-    % typecheck_pmatching_exprs(T, FinalType, CPos).
 
 extract_pattern_variables(wildcard, Map, Map, _) :- !.
 extract_pattern_variables(id(A), Map, NewMap, Pos) :-
@@ -163,8 +163,11 @@ extract_pattern_variables(_, Map, Map, _).
 
 pattern_variables_from_list([], Map, Map, _) :- !.
 pattern_variables_from_list([H | T], Map, FinalMap, Pos) :-
+    !,
     extract_pattern_variables(H, Map, NewMap, Pos),
     pattern_variables_from_list(T, NewMap, FinalMap, Pos).
+pattern_variables_from_list(Tail, Map, NewMap, Pos) :-
+    extract_pattern_variables(Tail, Map, NewMap, Pos).
 
 pattern_type_matches(T, T, _) :- !.
 pattern_type_matches(ExpectedT, T, Pos) :-

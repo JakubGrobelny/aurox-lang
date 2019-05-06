@@ -1,0 +1,17 @@
+defop * 15 left 
+defop - 10 left 
+
+define (*) a b : Int -> Int -> Int =
+    42
+end
+
+define (-) a b : Int -> Int -> Int =
+    42
+end
+
+define fact n :=
+    match n with
+        case 0 => 1
+        case _ => n * fact (n - 1)
+    end
+end
