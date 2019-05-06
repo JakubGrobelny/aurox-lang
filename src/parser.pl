@@ -185,7 +185,8 @@ type_definition(Start, typedef(Name, Params, Constructors) at Start) -->
     type_definition_params(Start, Params),
     expected_token(Start, keyword(with), 'with keyword', _),
     type_definition_cases(Start, Constructors),
-    expected_token(Start, keyword(end), 'end keyword', _).
+    expected_token(Start, keyword(end), 'end keyword', _),
+    { check_type_params(Name, Params, Start) }.
 
 type_name(_, TypeName) -->
     [tid(TypeName) at _],
@@ -248,6 +249,17 @@ type_definition_constructor_type(_, _) -->
         )
     }.
 type_definition_constructor_type(_, none) --> [].
+
+check_type_params(_, Params, _) :- 
+    unique_list(Params),
+    !.
+check_type_params(Name, Params, Pos) :-
+    not_unique_list(Params, Repeating),
+    print_error_and_halt(
+        Pos,
+        'non unique parameter ~w in type ~w definition',
+        [Repeating, Name]
+    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -453,13 +465,13 @@ expr_u_r(Priority, Expr, Operators) -->
     expr_u_l(Priority, Arg, Operators),
     expr_u_r_rest(Priority, Arg, Expr, Operators).
 expr_u_r_rest(Priority, Arg, app(id(UnOp), Arg), Operators) -->
-    operator(Op, Priority, right_unary, _, Operators, _),
+    operator(Op, Priority, postfix, _, Operators, _),
     !,
     { mark_unary_operator(Op, UnOp) }.
 expr_u_r_rest(_, Arg, Arg, _) --> [].
 
 expr_u_l(20, app(id(UnOp), Arg), Operators) -->
-    operator(Op, 20, left_unary, _, Operators, NOperators),
+    operator(Op, 20, prefix, _, Operators, NOperators),
     !,
     { mark_unary_operator(Op, UnOp) },
     application(Arg, NOperators).
@@ -467,7 +479,7 @@ expr_u_l(20, Expr, Operators) -->
     !,
     application(Expr, Operators).
 expr_u_l(Priority, app(id(UnOp), Arg), Operators) -->
-    operator(Op, Priority, left_unary, _, Operators, NOperators),
+    operator(Op, Priority, prefix, _, Operators, NOperators),
     !,
     { 
         N is Priority + 1,
@@ -646,7 +658,7 @@ pattern_matching_cases(Start, [Case | Cases], Operators) -->
     pattern_matching_cases(Start, Cases, Operators).
 pattern_matching_cases(_, [], _) --> [].
 
-pattern_matching_case(_, '=>'(Pattern, Expr), Operators) -->
+pattern_matching_case(_, case(Pattern, Expr), Operators) -->
     [keyword(case) at CaseStart],
     pattern_guard(CaseStart, Pattern),
     expected_token(CaseStart, op('=>'), '=> operator', _),

@@ -1,9 +1,9 @@
 :- ensure_loaded(utility).
 :- ensure_loaded(environment).
 
-typecheck_environment(env(Env, TEnv)) :-
+typecheck_environment(Env) :-
     dict_pairs(Env, _, Contents),
-    typecheck_environment(Contents, env(Env, TEnv)).
+    typecheck_environment(Contents, Env).
 
 % TODO: consider changing param(x) into X for every type
 typecheck_environment([], _) :- !.
@@ -31,31 +31,31 @@ typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
         [Var]
     ).
 
-infer_type(env(Env, _), id(Var), Type, _) :-
+infer_type(Env, id(Var), Type, _) :-
     get_dict(Var, Env, (var, PrevType, Pos)),
     \+ var(PrevType),
     PrevType = rec,
     !,
     b_set_dict(Var, Env, (var, Type, Pos)).
-infer_type(env(Env, _), id(Var), Type, _) :-
+infer_type(Env, id(Var), Type, _) :-
     get_dict(Var, Env, (var, Type, _)),
     !.
-infer_type(env(Env, _), id(Var), Type, _) :-
+infer_type(Env, id(Var), Type, _) :-
     get_dict(Var, Env, (Val, PrevType, DefPos)),
     \+ var(PrevType),
     PrevType = rec,
     !,
     b_set_dict(Var, Env, (Val, Type, DefPos)).
-infer_type(env(Env, _), id(Var), ExpectedType, _) :-
+infer_type(Env, id(Var), ExpectedType, _) :-
     get_dict(Var, Env, (_, Type, _)),
     \+ var(Type),
     !,
     copy_term(Type, ExpectedType).
-infer_type(env(Env, TEnv), id(Var), ExpectedType, _) :-
+infer_type(Env, id(Var), ExpectedType, _) :-
     get_dict(Var, Env, (Val at Pos, Type, DefPos)),
     b_set_dict(Var, Env, (Val at Pos, rec, DefPos)),
     !,
-    infer_type(env(Env, TEnv), Val, InferredType, DefPos),
+    infer_type(Env, Val, InferredType, DefPos),
     typecheck_rec(InferredType, Type, Env, Var, Val at Pos, DefPos),
     copy_term(Type, ExpectedType).
 infer_type(_, int(_), adt('Int', []), _) :- !.
@@ -89,21 +89,88 @@ infer_type(Env, list([Head | Tail]), list(HeadT), Pos) :-
     !.
 infer_type(Env, tuple(N, Elements), tuple(N, Types), Pos) :-
     typecheck_tuple(Env, N, Elements, Types, Pos).
-infer_type(env(Env, TEnv), let(Var, Type, Val at VPos, Expr at EPos), T, Pos) :-
-    infer_type(env(Env, TEnv), Val, ValT, VPos),
+infer_type(Env, let(Var, Type, Val at VPos, Expr at EPos), T, Pos) :-
+    infer_type(Env, Val, ValT, VPos),
     typecheck_let_def(Type, ValT, Pos),
     put_dict(Var, Env, (Val, ValT, VPos), NewEnv),
-    infer_type(env(NewEnv, TEnv), Expr, ExprT, EPos),
+    infer_type(NewEnv, Expr, ExprT, EPos),
     typecheck_let_def(T, ExprT, Pos).
-infer_type(env(Env, TEnv), lambda(Args, Expr), T, Pos) :-
+infer_type(Env, lambda(Args, Expr), T, Pos) :-
     construct_lambda_type(Args, LambdaType, Variables, Pos, ReturnType),
     put_dict(Variables, Env, IntermediateEnv),
-    infer_type(env(IntermediateEnv, TEnv), Expr, ReturnType, Pos),
+    infer_type(IntermediateEnv, Expr, ReturnType, Pos),
     typecheck_function_type(T, LambdaType, Pos).
+infer_type(_, wildcard, _, _) :- !.
+infer_type(Env, adt(Cons, _), TCopy, _) :-
+    get_dict(Cons, Env, (_, (_->T), _)),
+    copy_term(T, TCopy),
+    !.
+infer_type(Env, enum(Cons), TCopy, _) :-
+    get_dict(Cons, Env, (_, T, _)),
+    copy_term(T, TCopy),
+    !.
+infer_type(Env, pmatch(Expr at EPos, Patterns), T, Pos) :-
+    infer_type(Env, Expr, ExprT, EPos),
+    typcheck_pmatching(Env, Patterns, ExprT, T, Pos).
 
-% TODO:
-% pmatching
-% adts
+typcheck_pmatching(_, [], adt('Void', []), _, _) :- !.
+typcheck_pmatching(_, [], Type, _, Pos) :-
+    print_type_error(
+        Pos,
+        'empty pattern matching, expected Void, got ~w',
+        [type(Type)]
+    ).
+typcheck_pmatching(Env, [case(P, E at CPos)], ExpectedType, T, _) :-
+    !,
+    infer_type(Env, P, PT, CPos),
+    pattern_type_matches(ExpectedType, PT, CPos),
+    extract_pattern_variables(P, Env, NewEnv, CPos),
+    infer_type(NewEnv, E, T, CPos).
+typcheck_pmatching(Env, [case(P, E at CPos)| Ps], ExpectedType, T, Pos) :-
+    infer_type(Env, P, PT, CPos),
+    pattern_type_matches(ExpectedType, PT, CPos),
+    extract_pattern_variables(P, Env, NewEnv, CPos),    
+    infer_type(NewEnv, E, T, CPos),
+    typcheck_pmatching(Env, Ps, ExpectedType, FinalType, Pos),
+    typecheck_pmatching_exprs(T, FinalType, CPos).
+
+extract_pattern_variables(wildcard, Map, Map, _) :- !.
+extract_pattern_variables(id(A), Map, NewMap, Pos) :-
+    put_dict(A, Map, (var, _, Pos), NewMap),
+    !.
+extract_pattern_variables(adt(_, Pattern), Map, NewMap, Pos) :-
+    !,
+    extract_pattern_variables(Pattern, Map, NewMap, Pos).
+extract_pattern_variables(tuple(_, Elems), Map, NewMap, Pos) :-
+    !,
+    list_of_tuple(Elems, List),
+    pattern_variables_from_list(List, Map, NewMap, Pos).
+extract_pattern_variables(list(Xs), Map, NewMap, Pos) :-
+    !,
+    pattern_variables_from_list(Xs, Map, NewMap, Pos).
+extract_pattern_variables(_, Map, Map, _).
+
+pattern_variables_from_list([], Map, Map, _) :- !.
+pattern_variables_from_list([H | T], Map, FinalMap, Pos) :-
+    extract_pattern_variables(H, Map, NewMap, Pos),
+    pattern_variables_from_list(T, NewMap, FinalMap, Pos).
+
+pattern_type_matches(T, T, _) :- !.
+pattern_type_matches(ExpectedT, T, Pos) :-
+    print_type_error(
+        Pos,
+        'pattern type mismatch, expected ~w, got ~w',
+        [type(ExpectedT), type(T)]
+    ).
+
+typecheck_pmatching_exprs(T, T, _) :- !.
+typecheck_pmatching_exprs(T0, T1, CPos) :-
+    print_type_error(
+        CPos,
+        'pattern case expression type mismatch, expected ~w, got ~w',
+        [type(T0), type(T1)]
+    ).
+
 
 typecheck_rec(rec, _, _, _, _, _) :- !, fail.
 typecheck_rec(Inferred, Inferred, Env, Var, Val, Pos) :-
@@ -232,3 +299,34 @@ extract_variables_from_type(tuple(_, Types), Params) :-
 extract_variables_from_type(T, Params) :-
     T =.. [_ | Args],
     extract_variables_from_type(Args, Params).
+
+map_variable_to_type(none, _, none) :- !.
+map_variable_to_type(Var, _, Var) :-
+    var(Var),
+    !.
+map_variable_to_type(param(A), Map, Var) :-
+    get_dict(A, Map, Var),
+    !.
+map_variable_to_type(adt(N, Params), Map, adt(N, MappedParams)) :-
+    !,
+    map_variable_to_type(Params, Map, MappedParams).
+map_variable_to_type([T | Types], Map, [MT | MTypes]) :-
+    !,
+    map_variable_to_type(T, Map, MT),
+    map_variable_to_type(Types, Map, MTypes).
+map_variable_to_type([], _, []) :- !.
+map_variable_to_type(tuple(N, Types), Map, tuple(N, MTypes)) :-
+    !,
+    map_variable_to_tuple(Types, Map, MTypes).
+map_variable_to_type(T, Map, MT) :-
+    T =.. [Op | Args],
+    map_variable_to_tuple(Args, Map, MArgs),
+    MT =.. [Op | MArgs].
+    
+map_variable_to_tuple((H, T), Map, (MH, MT)) :-
+    !,
+    map_variable_to_type(H, Map, MH),
+    map_variable_to_tuple(T, Map, MT).
+map_variable_to_tuple(T, Map, MT) :-
+    map_variable_to_type(T, Map, MT).
+

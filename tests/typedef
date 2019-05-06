@@ -1,5 +1,6 @@
-type Natural with
-    case Zero
-    case Succ Natural
+type Maybe a b with
+    case Nothing
+    case Just (a, b)
 end
+
 

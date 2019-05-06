@@ -33,13 +33,13 @@ valid_priority(N, Pos) :-
     ).
 
 valid_associativity(Assoc, _) :-
-    member(Assoc, [left, right, none, left_unary, right_unary]),
+    member(Assoc, [left, right, none, prefix, postfix]),
     !.
 valid_associativity(Assoc, Pos) :-
     throw(
         error(
             'Invalid operator associativity type ~w in operator declaration.\c,
-             Allowed types are left, right, none, left_unary and right_unary', 
+             Allowed types are left, right, none, prefix and postfix', 
             [Assoc]
         ) at Pos
     ).

@@ -2,7 +2,7 @@
 # and minus – the only thing that matter here are types
 
 defop + 10 left
-defop - 20 left_unary
+defop - 20 prefix
 defop - 10 left
 
 define (-) a : Int -> Int =

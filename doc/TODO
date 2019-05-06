@@ -1,20 +1,6 @@
 1. better error messages (add context to expected_token)
 2. fix repl
-3. change unary/binary operator names so that they are separate functions
 4. absolute filenames using unix(argv(Argv))
-5. enum(C) vs adt(C, []).
-6. change param(a) into prolog variables in type signatures
-7. consider removing 'undefined' from patterns and type definitions
 8. importing files with operators defined may not work correctly
    when multiple files import the same file which has the definitions
-9. typechecker
 
-how to do type infering:
-go through environment
-if type is defined: check if it is correct (infer value's type and compare)
-if type is not defined: infer it
-keep a list of visited variables. If type for a variable is undefined then 
-infer it.
-If type does not match the signature: type error
-If type couldn't have been inferred: fail
-If there is a type mismatch: type error

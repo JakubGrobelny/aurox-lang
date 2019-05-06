@@ -17,6 +17,14 @@ print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
     print_error(Pos, MsgFormat, MsgArgs).
     % halt TODO:
 
+tuple_of_list(Xs, T) :-
+    list_of_tuple(T, Xs).
+
+list_of_tuple((H, T), [H | Ts]) :-
+    list_of_tuple(T, Ts),
+    !.
+list_of_tuple(X, [X]).
+
 clean_defs([]) :-
     nl, nl, !.
 clean_defs([define(Var, Type, Val at _) at _ | Defs]) :-
