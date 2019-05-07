@@ -20,11 +20,11 @@ add_definitions_to_env(
 add_definitions_to_env([P| Prog], Env, EnvOut, [P | ProgRest]) :-
     add_definitions_to_env(Prog, Env, EnvOut, ProgRest).
 
-env_add(op(Operator), Env, lambda([Arg], Val), TSig, Place, NewEnv) :-
+env_add(op(Operator), Env, lambda(Arg, Val), TSig, Place, NewEnv) :-
     !,
     mark_unary_operator(Operator, UnaryOperator),
     fix_type_signature(TSig, NewSig),
-    put_dict(UnaryOperator, Env, (lambda([Arg], Val), NewSig, Place), NewEnv).
+    put_dict(UnaryOperator, Env, (lambda(Arg, Val), NewSig, Place), NewEnv).
 env_add(Name, Env, Value, TypeSignature, Place, NewEnv) :-
     Name =.. [_, N],
     fix_type_signature(TypeSignature, NewSig),
@@ -122,7 +122,7 @@ add_constructors_to_env(Type, [C | Cs], VarMap, Pos, Env, FinalEnv) :-
     add_cons_to_env(
         CName, 
         MappedArgs->Type,
-        lambda([arg], adt(CName, id(arg))) at Pos,
+        lambda(arg, adt(CName, id(arg))) at Pos,
         Pos,
         Env,
         NewEnv
