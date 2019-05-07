@@ -30,6 +30,9 @@ typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
     ).
 
 infer_type(Env, id(Var), Type, _) :-
+    get_dict(Var, Env, (_, Type, builtin)),
+    !.
+infer_type(Env, id(Var), Type, _) :-
     get_dict(Var, Env, (var, PrevType, Pos)),
     \+ var(PrevType),
     PrevType = rec,

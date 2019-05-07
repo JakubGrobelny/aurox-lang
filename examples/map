@@ -7,7 +7,7 @@ end
 
 define filter p xs :=
     match xs with
-        case [] => []
+        case []       => []
         case [x | xs] =>
             if p x
                 then [x | filter p xs]

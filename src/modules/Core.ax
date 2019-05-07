@@ -1,5 +1,5 @@
-defop +  10 left
 defop -  10 left
+defop +  10 left
 defop *  12 left
 defop /  12 left
 defop ^  15 left
@@ -21,16 +21,22 @@ defop != 5 none
 defop !  18 prefix
 defop |> 0 left
 
-define (+) a b : Int -> Int -> Int =
-    __add a b
+define (+) a : Int -> Int -> Int =
+    { | b |
+        __add (a, b)
+    }
 end
 
-define (-) a b : Int -> Int -> Int =
-    __sub a b
+define (-) a : Int -> Int -> Int =
+    { | b | 
+        __sub (a, b)
+    }
 end
 
-define (*) a b : Int -> Int -> Int =
-    __mult a b
+define (*) a : Int -> Int -> Int =
+    { | b | 
+        __mult (a, b)
+    }
 end
 
 define (/) a b : Int -> Int -> Int =
