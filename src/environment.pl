@@ -24,19 +24,12 @@ add_definitions_to_env([P| Prog], Env, EnvOut, [P | ProgRest]) :-
 env_add(op(Operator), Env, lambda(Arg, Val), TSig, Place, NewEnv) :-
     !,
     mark_unary_operator(Operator, UnaryOperator),
-    fix_type_signature(TSig, NewSig),
-    put_dict(UnaryOperator, Env, (lambda(Arg, Val), NewSig, Place), NewEnv).
+    % fix_type_signature(TSig, NewSig),
+    put_dict(UnaryOperator, Env, (lambda(Arg, Val), TSig, Place), NewEnv).
 env_add(Name, Env, Value, TypeSignature, Place, NewEnv) :-
     Name =.. [_, N],
-    fix_type_signature(TypeSignature, NewSig),
-    put_dict(N, Env, (Value, NewSig, Place), NewEnv).
-
-fix_type_signature(Type, FixedType) :-
-    extract_variables_from_type(Type, Vars),
-    sort(Vars, VarsSorted),
-    params_to_keys(VarsSorted, Keys),
-    dict_create(Map, map, Keys),
-    map_variable_to_type(Type, Map, FixedType).
+    % fix_type_signature(TypeSignature, NewSig),
+    put_dict(N, Env, (Value, TypeSignature, Place), NewEnv).
 
 redefinition_warning(Name, Env, Where) :-
     get_dict(Name, Env, (_, _, pos(F, L, C))),

@@ -3,6 +3,13 @@ import_core_definitions(CoreEnv) :-
         CoreEnv,
         globenv,
         [
+            '`types':types{
+                'Int'  :0,
+                'Bool' :0,
+                'Char' :0,
+                'Void' :0,
+                'Float':0
+            },
             '__add':(
                 bfun('__add'),
                 (adt('Int', [])->adt('Int', [])->adt('Int', [])),

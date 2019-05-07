@@ -9,8 +9,11 @@ typecheck_environment([], _) :- !.
 typecheck_environment([('`types'-_) | Tail], Env) :-
     !,
     typecheck_environment(Tail, Env).
-typecheck_environment([_-(Val at Pos, Type, _) | Vars], Env) :-
-    infer_type(Env, Val, Type, Pos),
+typecheck_environment([_-(Val at Pos, TSig, _) | Vars], Env) :-
+    get_dict('`types', Env, Types),
+    check_if_types_defined(Types, TSig, Pos),
+    fix_type_signature(TSig, Type),
+    infer_type(Env, Val, TSig, Pos),
     !,
     \+ var(Type),
     typecheck_environment(Vars, Env).
@@ -31,6 +34,13 @@ typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
         'the type of value of ~w couldn\'t have been inferred',
         [Var]
     ).
+
+fix_type_signature(Type, FixedType) :-
+    extract_variables_from_type(Type, Vars),
+    sort(Vars, VarsSorted),
+    params_to_keys(VarsSorted, Keys),
+    dict_create(Map, map, Keys),
+    map_variable_to_type(Type, Map, FixedType).
 
 infer_type(Env, id(Var), Type, _) :-
     get_dict(Var, Env, (_, Type, builtin)),
@@ -304,15 +314,42 @@ prettify_types([type(T) | Ts], [PT | PTs]) :-
 prettify_types([Anything | Ts], [Anything | PTs]) :-
     prettify_types(Ts, PTs).
 
-
 prettify_type(X, X) :- !. % TODO: implement
+
+check_if_types_defined(_, Var, _) :-
+    var(Var),
+    !.
+check_if_types_defined(_, param(_), _) :- !.
+check_if_types_defined(_, none, _) :- !.
+check_if_types_defined(Types, adt(Name, Params), _) :-
+    get_dict(Name, Types, N),
+    length(Params, N),
+    !.
+check_if_types_defined(_, adt(Name, Params), Pos) :-
+    !,
+    print_type_error(
+        Pos,
+        'undefined type ~w',
+        [type(adt(Name, Params))]
+    ).
+check_if_types_defined(Types, [T | Ts], Pos) :-
+    !,
+    check_if_types_defined(Types, T, Pos),
+    check_if_types_defined(Types, Ts, Pos).
+check_if_types_defined(_, [], _) :- !.
+check_if_types_defined(Types, tuple(_, Ts), Pos) :-
+    !,
+    list_of_tuple(Ts, TsList),
+    check_if_types_defined(Types, TsList, Pos).
+check_if_types_defined(Types, T, Pos) :-
+    T =.. [_ | Args],
+    check_if_types_defined(Types, Args, Pos).
 
 extract_variables_from_type(Var, []) :-
     var(Var),
     !.
 extract_variables_from_type(none, []) :- !.
 extract_variables_from_type(param(A), [A]) :- !.
-extract_variables_from_type(name(_), []) :- !.
 extract_variables_from_type(adt(_, Parameters), FilteredParams) :-
     !,
     extract_variables_from_type(Parameters, FilteredParams).
@@ -324,7 +361,8 @@ extract_variables_from_type([T | Types], Params) :-
 extract_variables_from_type([], []) :- !.
 extract_variables_from_type(tuple(_, Types), Params) :-
     !,
-    extract_variables_from_type(Types, Params).
+    list_of_tuple(Types, List),
+    extract_variables_from_type(List, Params).
 extract_variables_from_type(T, Params) :-
     T =.. [_ | Args],
     extract_variables_from_type(Args, Params).
