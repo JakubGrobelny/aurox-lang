@@ -1,0 +1,17 @@
+define print i : String -> Unit =
+    ()
+end
+
+define to_string i : Int -> String =
+    ""
+end
+
+define (+) a b : Int -> Int -> Int =
+    0
+end
+
+define print_and_add i j :=
+    print (to_string i);
+    i + j
+end
+

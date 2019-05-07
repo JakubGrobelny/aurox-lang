@@ -39,8 +39,8 @@ define (*) a : Int -> Int -> Int =
     }
 end
 
-define (/) a b : Int -> Int -> Int =
-    __div a b
+define (/) a b : Int -> Int -> Maybe Int =
+    __div (a b)
 end
 
 define (^) a b : Int -> Int -> Int =

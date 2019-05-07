@@ -3,7 +3,8 @@
 :- ensure_loaded(operators).
 
 empty_env(Env) :-
-    dict_create(Env, globenv, []).
+    dict_create(Types, types, []),
+    dict_create(Env, globenv, ['`types':Types]).
 
 add_definitions_to_env([], Env, Env, []) :- !.
 add_definitions_to_env(
@@ -106,9 +107,26 @@ add_typedefs_to_env(
         Env, 
         NewEnv
     ),
-    add_typedefs_to_env(Program, NewEnv, FinalEnv, FinalProgram).
+    length(Params, NParams),
+    add_type_to_env(Name, NParams, NewEnv, EnvWithTypes, Pos),
+    add_typedefs_to_env(Program, EnvWithTypes, FinalEnv, FinalProgram).
 add_typedefs_to_env([_ | Program], Env, FinalEnv, FinalProgram) :-
     add_typedefs_to_env(Program, Env, FinalEnv, FinalProgram).
+
+add_type_to_env(Name, NParams, Env, NewEnv, Pos) :-
+    get_dict('`types', Env, Types),
+    add_type_to_env_and_check(Name, NParams, Types, NewTypes, Pos),
+    put_dict('`types', Env, NewTypes, NewEnv).
+add_type_to_env_and_check(Name, _, Types, _, Pos) :-
+    get_dict(Name, Types, (_, pos(F, L, C))),
+    !,
+    print_error_and_halt(
+        Pos,
+        'Redefinition of type ~w, previously defined at ~w:~w:~w',
+        [Name, F, L, C]
+    ).
+add_type_to_env_and_check(Name, NParams, Types, NewTypes, Pos) :-
+    put_dict(Name, Types, (NParams, Pos), NewTypes).
 
 add_constructors_to_env(_, [], _, _, Env, Env) :- !.
 add_constructors_to_env(Type, [C | Cs], VarMap, Pos, Env, FinalEnv) :-

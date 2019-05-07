@@ -16,7 +16,10 @@ import_core_definitions(CoreEnv) :-
         ]
     ).
 
-
+'__add'(tuple(_, (L, R)), Sum) :-
+    Sum is L + R.
+'__sub'(tuple(_, (L, R)), Sum) :-
+    Sum is L - R.
 
 
 

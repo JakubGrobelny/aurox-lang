@@ -6,6 +6,9 @@ typecheck_environment(Env) :-
     typecheck_environment(Contents, Env).
 
 typecheck_environment([], _) :- !.
+typecheck_environment([('`types'-_) | Tail], Env) :-
+    !,
+    typecheck_environment(Tail, Env).
 typecheck_environment([_-(Val at Pos, Type, _) | Vars], Env) :-
     infer_type(Env, Val, Type, Pos),
     !,
@@ -65,6 +68,13 @@ infer_type(_, id(Var), _, Pos) :-
         'undefined identifier ~w',
         [Var]
     ).
+infer_type(Env, [Expr], Type, Pos) :-
+    !,
+    infer_type(Env, Expr, Type, Pos).
+infer_type(Env, [H | T], Type, Pos) :-
+    !,
+    infer_type(Env, H, _, Pos),
+    infer_type(Env, T, Type, Pos).
 infer_type(_, int(_), adt('Int', []), _) :- !.
 infer_type(_, float(_), adt('Float', []), _) :- !.
 infer_type(_, char(_), adt('Char', []), _) :- !.
@@ -201,7 +211,7 @@ typecheck_function_type(T, T, _) :- !.
 typecheck_function_type(T0, T1, Pos) :-
     print_type_error(
         Pos,
-        'type mismatch in function literal, expected ~w, got ~w',
+        'type mismatch in function, expected ~w, got ~w',
         [type(T0), type(T1)]
     ).
 

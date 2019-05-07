@@ -332,10 +332,11 @@ function_type_tail([Type | Types]) -->
     function_type_tail(Types).
 function_type_tail([]) --> [].
 
-algebraic_type(adt(TypeName, Parameters)) -->
+algebraic_type(Type) -->
     [tid(TypeName) at _],
     !,
-    atomic_type_sequence(Parameters).
+    atomic_type_sequence(Parameters),
+    { string_type_to_char_list(TypeName, Parameters, Type) }.
 algebraic_type(Atomic) -->
     atomic_type(Atomic).
 atomic_type_sequence([Type | Types]) -->
@@ -347,8 +348,9 @@ atomic_type_sequence([]) --> [].
 atomic_type(param(Id)) -->
     [id(Id) at _],
     !.
-atomic_type(adt(Name, [])) -->
+atomic_type(Type) -->
     [tid(Name) at _],
+    { string_type_to_char_list(Name, [], Type) },
     !.
 atomic_type(list(Type)) -->
     ['[' at _],
@@ -360,6 +362,9 @@ atomic_type(Type) -->
     !,
     type(Type),
     [')' at _].
+
+string_type_to_char_list('String', [], list(adt('Char', []))) :- !.
+string_type_to_char_list(Name, Params, adt(Name, Params)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %

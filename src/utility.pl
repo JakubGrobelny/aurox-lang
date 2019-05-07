@@ -30,6 +30,9 @@ pretty_env(Env) :-
     pretty_env_helper(Pairs).
 
 pretty_env_helper([]) :- nl, !.
+pretty_env_helper(['`types'-_ | T]) :-
+    !,
+    pretty_env_helper(T).
 pretty_env_helper([Name-(_,T,_) | Defs]) :-
     format('~w :: ~w\n', [Name, T]),
     pretty_env_helper(Defs).
