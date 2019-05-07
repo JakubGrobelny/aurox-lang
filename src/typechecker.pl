@@ -76,10 +76,10 @@ infer_type(Env, Logical, adt('Bool', []), Pos) :-
     infer_type(Env, Rhs, RhsT, Pos),
     typecheck_logical(LhsT, RhsT, Pos),
     !.
-infer_type(Env, if(Cond, Then, Else), T, Pos) :-
-    infer_type(Env, Cond, CondT, Pos),
-    infer_type(Env, Then, ThenT, Pos),
-    infer_type(Env, Else, ElseT, Pos),
+infer_type(Env, if(Cond at CPos, Then at TPos, Else at EPos), T, Pos) :-
+    infer_type(Env, Cond, CondT, CPos),
+    infer_type(Env, Then, ThenT, TPos),
+    infer_type(Env, Else, ElseT, EPos),
     typecheck_if(CondT, ThenT, ElseT, T, Pos),
     !.
 infer_type(_, list([]), list(_), _) :- !.

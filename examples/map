@@ -4,3 +4,14 @@ define map f xs :=
         case [x | xs] => [f x | map f xs]
     end
 end
+
+define filter p xs :=
+    match xs with
+        case [] => []
+        case [x | xs] =>
+            if p x
+                then [x | filter p xs]
+                else filter p xs
+            end
+    end 
+end
