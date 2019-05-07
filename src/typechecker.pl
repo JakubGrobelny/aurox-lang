@@ -116,7 +116,7 @@ infer_type(Env, list([Head | Tail]), list(HeadT), Pos) :-
     !.
 infer_type(Env, tuple(N, Elements), tuple(N, Types), Pos) :-
     typecheck_tuple(Env, N, Elements, Types, Pos).
-infer_type(Env, let(Var, Type, Val at VPos, Expr at EPos), T, Pos) :-
+infer_type(Env, let(id(Var), Type, Val at VPos, Expr at EPos), T, Pos) :-
     infer_type(Env, Val, ValT, VPos),
     typecheck_let_def(Type, ValT, Pos),
     put_dict(Var, Env, (Val, ValT, VPos), NewEnv),

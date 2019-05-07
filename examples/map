@@ -1,3 +1,11 @@
+define f x :=
+    f x
+end
+
+define id a :=
+    a
+end
+
 define map f xs :=
     match xs with
         case [] => []
@@ -15,3 +23,5 @@ define filter p xs :=
             end
     end 
 end
+
+define mapped := map {|x| x} [1,2,3,4] end
