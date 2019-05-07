@@ -172,8 +172,13 @@ desugar_function_definition(define(Name, Args, _, _ at Pos), _) :-
     ).
 desugar_function_definition(
     define(Name, Args, Type, Value at Pos),
-    define(Name, Type, lambda(Args, Value) at Pos)
-).
+    define(Name, Type, Lambda at Pos)
+) :- 
+    make_lambda(Args, Value, Lambda).
+
+make_lambda([Arg], Expr, lambda(Arg, Expr)) :- !.
+make_lambda([Arg | Args], Expr, lambda(Arg, FinalExpr)) :-
+    make_lambda(Args, Expr, FinalExpr).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %
@@ -528,13 +533,14 @@ merge_expr(Lhs, [Op, Rhs], app(app(id(Op), Lhs), Rhs)) :-
     !.
 merge_expr(Lhs, [], Lhs).
 
-lambda(lambda(Params, Expr), Operators) -->
+lambda(Lambda, Operators) -->
     ['{' at Start],
     !,
     lambda_param_list(Start, Params),
     { unique_lambda_parameters(Params, Start) },
     expression_top_level(Start, Expr at _, Operators),
-    expected_token(Start, '}', 'closing curly bracket', _).
+    expected_token(Start, '}', 'closing curly bracket', _),
+    { make_lambda(Params, Expr, Lambda) }.
 lambda_param_list(Start, Params) -->
     expected_token(Start, op('|'), 'lambda parameter list delimiter', _),
     formal_parameters(Params),

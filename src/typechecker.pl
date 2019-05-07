@@ -5,14 +5,12 @@ typecheck_environment(Env) :-
     dict_pairs(Env, _, Contents),
     typecheck_environment(Contents, Env).
 
-% TODO: consider changing param(x) into X for every type
 typecheck_environment([], _) :- !.
 typecheck_environment([_-(Val at Pos, Type, _) | Vars], Env) :-
     infer_type(Env, Val, Type, Pos),
-    \+ var(Type),
     !,
+    \+ var(Type),
     typecheck_environment(Vars, Env).
-% TODO: case when Var is a Constructor
 typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     infer_type(Env, Val, ValType, Pos),
     \+ var(ValType),
@@ -58,6 +56,12 @@ infer_type(Env, id(Var), ExpectedType, _) :-
     infer_type(Env, Val, InferredType, DefPos),
     typecheck_rec(InferredType, Type, Env, Var, Val at Pos, DefPos),
     copy_term(Type, ExpectedType).
+infer_type(_, id(Var), _, Pos) :-
+    print_error_and_halt(
+        Pos,
+        'undefined identifier ~w',
+        [Var]
+    ).
 infer_type(_, int(_), adt('Int', []), _) :- !.
 infer_type(_, float(_), adt('Float', []), _) :- !.
 infer_type(_, char(_), adt('Char', []), _) :- !.
@@ -95,8 +99,8 @@ infer_type(Env, let(Var, Type, Val at VPos, Expr at EPos), T, Pos) :-
     put_dict(Var, Env, (Val, ValT, VPos), NewEnv),
     infer_type(NewEnv, Expr, ExprT, EPos),
     typecheck_let_def(T, ExprT, Pos).
-infer_type(Env, lambda(Args, Expr), T, Pos) :-
-    construct_lambda_type(Args, LambdaType, Variables, Pos, ReturnType),
+infer_type(Env, lambda(Arg, Expr), T, Pos) :-
+    construct_lambda_type(Arg, LambdaType, Variables, Pos, ReturnType),
     put_dict(Variables, Env, IntermediateEnv),
     infer_type(IntermediateEnv, Expr, ReturnType, Pos),
     typecheck_function_type(T, LambdaType, Pos).
@@ -198,9 +202,7 @@ typecheck_function_type(T0, T1, Pos) :-
         [type(T0), type(T1)]
     ).
 
-construct_lambda_type([P], A->RetT, [P:(var, A, Pos)], Pos, RetT) :- !.
-construct_lambda_type([P | Ps], A->T, [P:(var, A, Pos) | Ts], Pos, RetT) :-
-    construct_lambda_type(Ps, T, Ts, Pos, RetT).
+construct_lambda_type(P, A->RetT, [P:(var, A, Pos)], Pos, RetT).
 
 typecheck_let_def(T, T, _) :- !.
 typecheck_let_def(T1, T0, Pos) :-

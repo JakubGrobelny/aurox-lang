@@ -7,10 +7,8 @@ interpret_program(EntryPoint) :-
     process_definitions(AST, _, Env),
     typecheck_environment(Env),
     pretty_env(Env).
- 
+
 process_definitions(AST, Program, Env) :-
     empty_env(EmptyEnv),
     add_definitions_to_env(AST, EmptyEnv, EnvWithDefs, ASTNoDefs),
     add_typedefs_to_env(ASTNoDefs, EnvWithDefs, Env, Program).
-
-
