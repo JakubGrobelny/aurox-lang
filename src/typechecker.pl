@@ -127,7 +127,6 @@ infer_type(Env, let(id(Var), Type, Val at VPos, Expr at EPos), T, Pos) :-
     typecheck_let_def(T, ExprT, Pos).
 infer_type(Env, lambda(Arg, Expr), T, Pos) :-
     construct_lambda_type(Arg, LambdaType, Variables, Pos, ReturnType),
-    format('\n\nDEBUG: ~w\n\n', [Variables]),
     put_dict(Variables, Env, IntermediateEnv),
     infer_type(IntermediateEnv, Expr, ReturnType, Pos),
     typecheck_function_type(T, LambdaType, Pos).

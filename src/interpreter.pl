@@ -16,8 +16,9 @@ process_definitions(AST, EnvIn, Program, EnvOut) :-
     add_typedefs_to_env(ASTNoDefs, EnvWithDefs, EnvOut, Program).
 
 import_core_module(Env, NewEnv, Operators) :-
+    fix_file_path('modules/Core.ax', File),
     parse_file(
-        'src/modules/Core.ax', 
+        File, 
         Core, 
         pos('Core',0,0), 
         [], 

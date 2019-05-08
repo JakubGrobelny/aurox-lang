@@ -1,5 +1,6 @@
 :- ensure_loaded(operators).
 :- ensure_loaded(parser).
+:- ensure_loaded(utility).
 
 import_dependencies([], Deps, EmptyOps, Deps, X, X) :-
     empty_operator_list(EmptyOps),
@@ -14,8 +15,9 @@ import_dependencies(
 ) :-
     \+ member(file_name(File), AlreadyImported),
     !,
+    fix_file_path(File, FixedFile),
     parse_file(
-        File, 
+        FixedFile, 
         DepAST, 
         FStart, 
         AlreadyImported,
