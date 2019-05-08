@@ -2,17 +2,34 @@
 :- ensure_loaded(imports).
 :- ensure_loaded(patterns).
 
-parse_file(FileName, AST) :-
-    parse_file(FileName, AST, pos(FileName,0,0), [], _, _).
-
+parse_file(FileName, Operators, Program) :-
+    parse_file(
+        FileName,
+        Program,
+        pos(FileName, 0, 0),
+        [],
+        _,
+        Operators,
+        _
+    ).
 parse_file(FileName, AST, Start, Imported, NewDeps, NewOperators) :-
-    tokenize_file(FileName, Tokens, Start),
     empty_operator_list(Operators),
+    parse_file(
+        FileName,
+        AST,
+        Start,
+        Imported,
+        NewDeps,
+        Operators,
+        NewOperators
+    ).
+parse_file(FileName, AST, Start, Imported, NewDeps, Ops, NewOperators) :-
+    tokenize_file(FileName, Tokens, Start),
     catch(
         phrase(
             program(
                 AST, 
-                Operators, 
+                Ops, 
                 NewOperators, 
                 [file_name(FileName) | Imported],
                 NewDeps
@@ -150,7 +167,7 @@ formal_parameters([]) --> [].
 
 desugar_function_definition(
     define(op(Op), [Arg], Type, Value at Pos),
-    define(id(UnOp), Type, lambda([Arg], Value) at Pos)
+    define(id(UnOp), Type, lambda(Arg, Value) at Pos)
 ) :-
     !,
     mark_unary_operator(Op, UnOp).

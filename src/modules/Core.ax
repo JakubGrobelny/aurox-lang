@@ -7,24 +7,24 @@ defop /  12 left
 defop ^  15 left
 defop -  18 prefix
 
-define (+) a : Int -> Int -> Int =
-    { | b | __add (a, b) }
+define (+) a b : Int -> Int -> Int =
+    __add (a, b)
 end
 
-define (-) a : Int -> Int -> Int =
-    { | b | __sub (a, b) }
+define (-) a b : Int -> Int -> Int =
+    __sub (a, b)
 end
 
-define (*) a : Int -> Int -> Int =
-    { | b | __mult (a, b) }
+define (*) a b : Int -> Int -> Int =
+    __mult (a, b)
 end
 
-define (/) a : Int -> Int -> Int =
-    { | b | __div (a, b) }
+define (/) a b : Int -> Int -> Int =
+    __div (a, b)
 end
 
-define (^) a : Int -> Int -> Int =
-    { | b | __pow (a, b) }
+define (^) a b : Int -> Int -> Int =
+    __pow (a, b)
 end
 
 define (-) a : Int -> Int =
@@ -40,24 +40,24 @@ defop /. 12 left
 defop ^. 15 left
 defop -. 18 prefix
 
-define (+.) a : Float -> Float -> Float =
-    { | b | __addf (a, b) }
+define (+.) a b : Float -> Float -> Float =
+    __addf (a, b)
 end
 
-define (-.) a : Float -> Float -> Float =
-    { | b | __subf (a, b) }
+define (-.) a b : Float -> Float -> Float =
+    __subf (a, b)
 end
 
-define (*.) a : Float -> Float -> Float =
-    { | b | __multf (a, b) }
+define (*.) a b : Float -> Float -> Float =
+    __multf (a, b)
 end
 
-define (/.) a : Float -> Float -> Float =
-    { | b | __divf (a, b) }
+define (/.) a b : Float -> Float -> Float =
+    __divf (a, b)
 end
 
-define (^.) a : Float -> Float -> Float =
-    { | b | __powf (a, b) }
+define (^.) a b : Float -> Float -> Float =
+    __powf (a, b)
 end
 
 define (-.) a : Float -> Float =
@@ -92,30 +92,30 @@ defop == 5  none
 defop != 5  none
 defop !  18 prefix
 
-define (<) l : a -> a -> Bool =
-    { | r | __cmp_less (l, r) }
+define (<) l r : a -> a -> Bool =
+    __cmp_less (l, r)
 end
 
-define (>) l : a -> a -> Bool =
-    { | r | __cmp_great (l, r) }
+define (>) l r : a -> a -> Bool =
+    __cmp_great (l, r)
 end
 
-define (==) l : a -> a -> Bool =
-    { | r | __cmp_eq (l, r) }
+define (==) l r : a -> a -> Bool =
+    __cmp_eq (l, r)
 end
 
 define (!) a : Bool -> Bool =
     __not a
 end
 
-define (<=) l : a -> a -> Bool =
-    { | r | __cmp_less_eq (l, r) }
+define (<=) l r : a -> a -> Bool =
+    __cmp_less_eq (l, r)
 end
 
-define (>=) l : a -> a -> Bool =
-    { | r | __cmp_great_eq (l, r) }
+define (>=) l r : a -> a -> Bool =
+    __cmp_great_eq (l, r)
 end
 
-define (!=) l : a -> a -> Bool =
-    { | r | __cmp_neq (l, r) }
+define (!=) l r : a -> a -> Bool =
+    __cmp_neq (l, r)
 end

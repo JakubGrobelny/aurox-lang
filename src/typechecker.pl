@@ -9,6 +9,9 @@ typecheck_environment([], _) :- !.
 typecheck_environment([('`types'-_) | Tail], Env) :-
     !,
     typecheck_environment(Tail, Env).
+typecheck_environment([_-(_, _, builtin) | Tail], Env) :-
+    !,
+    typecheck_environment(Tail, Env).
 typecheck_environment([_-(Val at Pos, TSig, _) | Vars], Env) :-
     get_dict('`types', Env, Types),
     check_if_types_defined(Types, TSig, Pos),
@@ -124,6 +127,7 @@ infer_type(Env, let(id(Var), Type, Val at VPos, Expr at EPos), T, Pos) :-
     typecheck_let_def(T, ExprT, Pos).
 infer_type(Env, lambda(Arg, Expr), T, Pos) :-
     construct_lambda_type(Arg, LambdaType, Variables, Pos, ReturnType),
+    format('\n\nDEBUG: ~w\n\n', [Variables]),
     put_dict(Variables, Env, IntermediateEnv),
     infer_type(IntermediateEnv, Expr, ReturnType, Pos),
     typecheck_function_type(T, LambdaType, Pos).

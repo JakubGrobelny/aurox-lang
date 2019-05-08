@@ -26,7 +26,8 @@ tokenize_file(FileName, Tokens, WhereImported) :-
         print_error_and_halt(Pos, Format, Args)
     ).
 
-lowercase(Char) --> [Char], { char_type(Char, lower) }.
+lowercase(Char) --> [Char], { char_type(Char, lower) }, !.
+lowercase('_')  --> ['_'].
 
 uppercase(Char) --> [Char], { char_type(Char, upper) }.
 
@@ -225,8 +226,7 @@ delimiter('(') --> ['('], !.
 delimiter(')') --> [')'], !.
 delimiter(',') --> [','], !.
 delimiter(':') --> [':'], !.
-delimiter(';') --> [';'], !.
-delimiter(',') --> ['.'].
+delimiter(';') --> [';'].
 
 lexer(Tokens, pos(F, L, C)) -->
     whitespace, 
@@ -257,11 +257,6 @@ lexer([op(Op) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
         NC is C + Len + 1,
         atomic_list_concat([OpHead | OpTail], Op)
     }, 
-    lexer(Tokens, pos(F, L, NC)).
-lexer([keyword('_') at pos(F, L ,C) | Tokens], pos(F, L, C)) -->
-    ['_'],
-    !,
-    { NC is C + 1 },
     lexer(Tokens, pos(F, L, NC)).
 lexer([tid(TId) at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     uppercase(Letter), 

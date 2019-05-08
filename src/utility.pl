@@ -14,8 +14,8 @@ print_error(Pos, MsgFormat, MsgArgs) :-
     print_colored_message(Pos, MsgFormat, MsgArgs, '\u001b[31m', 'error').
 
 print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
-    print_error(Pos, MsgFormat, MsgArgs).
-    % halt TODO:
+    print_error(Pos, MsgFormat, MsgArgs),
+    halt.
 
 tuple_of_list(Xs, T) :-
     list_of_tuple(T, Xs).
