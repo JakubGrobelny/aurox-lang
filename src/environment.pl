@@ -103,7 +103,7 @@ add_typedefs_to_env(
     length(Params, NParams),
     add_type_to_env(Name, NParams, NewEnv, EnvWithTypes, Pos),
     add_typedefs_to_env(Program, EnvWithTypes, FinalEnv, FinalProgram).
-add_typedefs_to_env([_ | Program], Env, FinalEnv, FinalProgram) :-
+add_typedefs_to_env([P | Program], Env, FinalEnv, [P | FinalProgram]) :-
     add_typedefs_to_env(Program, Env, FinalEnv, FinalProgram).
 
 add_type_to_env(Name, NParams, Env, NewEnv, Pos) :-

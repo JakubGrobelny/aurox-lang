@@ -3,13 +3,13 @@
 :- ensure_loaded(environment).
 :- ensure_loaded(pervasives).
 
-interpret_program(EntryPoint) :-
+interpret_program(EntryPoint, Program) :-
     import_core_definitions(FreshEnv),
     import_core_module(FreshEnv, NewEnv, Operators),
     parse_file(EntryPoint, Operators, AST),
-    process_definitions(AST, NewEnv,_, Env),
-    typecheck_environment(Env),
-    pretty_env(Env).
+    process_definitions(AST, NewEnv, Program, FinalEnv),
+    typecheck_environment(FinalEnv),
+    typecheck_program(FinalEnv, Program).
 
 process_definitions(AST, EnvIn, Program, EnvOut) :-
     add_definitions_to_env(AST, EnvIn, EnvWithDefs, ASTNoDefs),

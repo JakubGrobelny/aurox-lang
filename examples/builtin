@@ -1,3 +1,10 @@
 define add10 a :=
     a + 10
 end
+
+define f a b :=
+    if true
+        then a
+        else b
+    end
+end 

@@ -1,6 +1,18 @@
 :- ensure_loaded(utility).
 :- ensure_loaded(environment).
 
+typecheck_program(_, []) :- !.
+typecheck_program(Env, [Expr at Pos | Exprs]) :-
+    infer_type(Env, Expr, _, Pos),
+    !,
+    typecheck_program(Env, Exprs).
+typecheck_program(_, [_ at Pos | _]) :-
+    print_error_and_halt(
+        Pos,
+        'type of expression couldn\'t have been inferred',
+        []
+    ).
+
 typecheck_environment(Env) :-
     dict_pairs(Env, _, Contents),
     typecheck_environment(Contents, Env).
@@ -26,7 +38,7 @@ typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     !,
     print_type_error(
         ValPos,
-        'The type ~w of expression ~w does not match the type \c 
+        'The type ~w of variable ~w does not match the type \c 
          annotation ~w specified in the definition of ~w',
         [type(ValType), Val, type(Type), Var]
     ).
@@ -67,14 +79,16 @@ infer_type(Env, id(Var), ExpectedType, _) :-
     get_dict(Var, Env, (_, Type, _)),
     \+ var(Type),
     !,
-    copy_term(Type, ExpectedType).
+    copy_term(Type, Copy),
+    fix_type_signature(Copy, ExpectedType).
 infer_type(Env, id(Var), ExpectedType, _) :-
     get_dict(Var, Env, (Val at Pos, Type, DefPos)),
     b_set_dict(Var, Env, (Val at Pos, rec, DefPos)),
     !,
     infer_type(Env, Val, InferredType, DefPos),
     typecheck_rec(InferredType, Type, Env, Var, Val at Pos, DefPos),
-    copy_term(Type, ExpectedType).
+    copy_term(Type, Copy),
+    fix_type_signature(Copy, ExpectedType).
 infer_type(_, id(Var), _, Pos) :-
     print_error_and_halt(
         Pos,
@@ -215,7 +229,6 @@ typecheck_pmatching_exprs(T0, T1, CPos) :-
         [type(T0), type(T1)]
     ).
 
-
 typecheck_rec(rec, _, _, _, _, _) :- !, fail.
 typecheck_rec(Inferred, Inferred, Env, Var, Val, Pos) :-
     b_set_dict(Var, Env, (Val, Inferred, Pos)).
@@ -300,7 +313,7 @@ typecheck_application(A->B, A, B, _) :- !.
 typecheck_application(FunT, ArgT, _, Start) :-
     print_type_error(
         Start,
-        'type mismatch in function application.\c
+        'type mismatch in function application. \c
          Expression of type ~w can\'t be applied to expression of type ~w',
          [type(FunT), type(ArgT)]
     ).
@@ -309,15 +322,43 @@ print_type_error(Start, MsgFormat, MsgArgs) :-
     prettify_types(MsgArgs, Prettified),
     print_error_and_halt(Start, MsgFormat, Prettified).
 
-prettify_types([], []) :- !.
-prettify_types([type(T) | Ts], [PT | PTs]) :-
-    !,
-    prettify_type(T, PT),
-    prettify_types(Ts, PTs).
-prettify_types([Anything | Ts], [Anything | PTs]) :-
-    prettify_types(Ts, PTs).
+prettify_types(Types, Prettified) :-
+    char_code(a, Code),
+    prettify_types(Types, Code, _, Prettified).
 
-prettify_type(X, X) :- !. % TODO: implement
+prettify_types([], Code, Code, []) :- !.
+prettify_types([type(T) | Ts], Code, FinalCode, [PT | PTs]) :-
+    !,
+    prettify_type(T, Code, NewCode, PT),
+    prettify_types(Ts, NewCode, FinalCode, PTs).
+prettify_types([X | Ts], Code, NewCode, [X | PTs]) :-
+    prettify_types(Ts, Code, NewCode, PTs).
+
+prettify_type(X, Code, NewCode, Atom) :-
+    var(X),
+    !,
+    char_code(Atom, Code),
+    NewCode is Code + 1.
+prettify_type(adt(Name, Params), Code, NewCode, Atom) :-
+    !,
+    prettify_types(Params, Code, NewCode, PParams),
+    atomic_list_concat([Name | PParams], ' ', Atom).
+prettify_type(list(Type), Code, NewCode, Atom) :-
+    !,
+    prettify_type(Type, Code, NewCode, TypeAtom),
+    atomic_list_concat(['[', TypeAtom, ']'], Atom).
+prettify_type(tuple(_, Elements), Code, NewCode, Atom) :-
+    !,
+    list_of_tuple(Elements, ElementsList),
+    prettify_types(ElementsList, Code, NewCode, Prettified),
+    atomic_list_concat(Prettified, ', ', Atom).
+prettify_type(param(A), Code, Code, A) :- !.
+prettify_type((T0->T1), Code, FinalCode, Atom) :-
+    !,
+    prettify_type(T0, Code, NewCode, T0Atom),
+    prettify_type(T1, NewCode, FinalCode, T1Atom),
+    atomic_list_concat([T0Atom, '->', T1Atom], Atom).
+prettify_type(X, Code, Code, X).
 
 check_if_types_defined(_, Var, _) :-
     var(Var),
