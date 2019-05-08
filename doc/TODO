@@ -3,3 +3,6 @@
 8. importing files with operators defined may not work correctly
    when multiple files import the same file which has the definitions
 9. way of passing operator definitions from file to file 
+10. type prettyfying – add brackets around compound type parameters
+    (eg. Maybe Maybe Int)
+11. remove the dictionary key-value preprocessing

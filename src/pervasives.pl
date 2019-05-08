@@ -6,11 +6,12 @@ import_core_definitions(CoreEnv) :-
         globenv,
         [
             '`types':types{
-                'Int'  : 0,
-                'Bool' : 0,
-                'Char' : 0,
-                'Void' : 0,
-                'Float': 0
+                'Int'  : (0, builtin),
+                'Bool' : (0, builtin),
+                'Char' : (0, builtin),
+                'Void' : (0, builtin),
+                'Float': (0, builtin),
+                'Unit' : (0, builtin)
             },
             '__add':(
                 bfun('__add') at builtin,

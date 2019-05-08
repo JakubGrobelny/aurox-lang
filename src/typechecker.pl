@@ -334,6 +334,11 @@ prettify_types([type(T) | Ts], Code, FinalCode, [PT | PTs]) :-
 prettify_types([X | Ts], Code, NewCode, [X | PTs]) :-
     prettify_types(Ts, Code, NewCode, PTs).
 
+prettify_type_list([], Code, Code, []) :- !.
+prettify_type_list([T | Ts], Code, FinalCode, [TAtom | TsAtoms]) :-
+    prettify_type(T, Code, NewCode, TAtom),
+    prettify_type_list(Ts, NewCode, FinalCode, TsAtoms).
+
 prettify_type(X, Code, NewCode, Atom) :-
     var(X),
     !,
@@ -341,7 +346,7 @@ prettify_type(X, Code, NewCode, Atom) :-
     NewCode is Code + 1.
 prettify_type(adt(Name, Params), Code, NewCode, Atom) :-
     !,
-    prettify_types(Params, Code, NewCode, PParams),
+    prettify_type_list(Params, Code, NewCode, PParams),
     atomic_list_concat([Name | PParams], ' ', Atom).
 prettify_type(list(Type), Code, NewCode, Atom) :-
     !,
@@ -350,14 +355,15 @@ prettify_type(list(Type), Code, NewCode, Atom) :-
 prettify_type(tuple(_, Elements), Code, NewCode, Atom) :-
     !,
     list_of_tuple(Elements, ElementsList),
-    prettify_types(ElementsList, Code, NewCode, Prettified),
-    atomic_list_concat(Prettified, ', ', Atom).
+    prettify_type_list(ElementsList, Code, NewCode, Prettified),
+    atomic_list_concat(Prettified, ', ', AtomWithoutBrackets),
+    atomic_list_concat(['(', AtomWithoutBrackets, ')'], Atom).
 prettify_type(param(A), Code, Code, A) :- !.
 prettify_type((T0->T1), Code, FinalCode, Atom) :-
     !,
     prettify_type(T0, Code, NewCode, T0Atom),
     prettify_type(T1, NewCode, FinalCode, T1Atom),
-    atomic_list_concat([T0Atom, '->', T1Atom], Atom).
+    atomic_list_concat(['(', T0Atom, '->', T1Atom, ')'], Atom).
 prettify_type(X, Code, Code, X).
 
 check_if_types_defined(_, Var, _) :-
@@ -366,7 +372,7 @@ check_if_types_defined(_, Var, _) :-
 check_if_types_defined(_, param(_), _) :- !.
 check_if_types_defined(_, none, _) :- !.
 check_if_types_defined(Types, adt(Name, Params), _) :-
-    get_dict(Name, Types, N),
+    get_dict(Name, Types, (N, _)),
     length(Params, N),
     !.
 check_if_types_defined(_, adt(Name, Params), Pos) :-
