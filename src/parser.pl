@@ -1,6 +1,5 @@
 :- ensure_loaded(lexer).
 :- ensure_loaded(imports).
-:- ensure_loaded(patterns).
 
 parse_file(FileName, Operators, Program) :-
     parse_file(
@@ -638,8 +637,8 @@ conditional_expression(Start, if(Cond, Cons, Alt), Operators) -->
     expression_top_level(ThenStart, Cons, Operators),
     conditional_expression_else(Start, Alt, Operators).
 
-conditional_expression_else(_, unit, _) -->
-    [keyword(end) at _],
+conditional_expression_else(_, unit at Start, _) -->
+    [keyword(end) at Start],
     !.
 conditional_expression_else(Start, Alt, Operators) -->
     expected_token(Start, keyword(else), 'else keyword', ElseStart),

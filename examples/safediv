@@ -1,12 +1,6 @@
-type Maybe a with
-    case Nothing 
-    case Just a
-end
-
 define safediv arg0 arg1 : Int -> Int -> Maybe Int =
     match arg1 with
         case 0 => Nothing
         case _ => Just (__div (arg0,arg1))
     end
 end
-

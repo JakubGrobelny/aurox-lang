@@ -6,3 +6,7 @@
 10. type prettyfying – add brackets around compound type parameters
     (eg. Maybe Maybe Int)
 11. remove the dictionary key-value preprocessing
+12. consider keeping the type info for expressions to print it after
+    execution
+
+

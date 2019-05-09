@@ -22,6 +22,18 @@ preprocess_expr(pmatch(Expr at _, Cases), pmatch(PExpr, PCases)) :-
     !,
     preprocess_expr(Expr, PExpr),
     preprocess_pmatch_cases(Cases, PCases).
+preprocess_expr(and(Lhs, Rhs), and(NLhs, NRhs)) :-
+    !,
+    preprocess_expr(Lhs, NLhs),
+    preprocess_expr(Rhs, NRhs).
+preprocess_expr(or(Lhs, Rhs), or(NLhs, NRhs)) :-
+    !,
+    preprocess_expr(Lhs, NLhs),
+    preprocess_expr(Rhs, NRhs).
+preprocess_expr(let(id(Var), _, Val at _, Expr at _), let(Var, NVal, NExpr)) :-
+    !,
+    preprocess_expr(Val, NVal),
+    preprocess_expr(Expr, NExpr).
 preprocess_expr(lambda(Arg, Expr), lambda(Arg, PExpr)) :-
     !,
     preprocess_expr(Expr, PExpr).
@@ -65,8 +77,11 @@ preprocess_tuple(Expr, PPExpr) :-
 
 preprocess_list([], []) :- !.
 preprocess_list([X | Xs], [Y | Ys]) :-
+    !,
     preprocess_expr(X, Y),
     preprocess_list(Xs,  Ys).
+preprocess_list(Tail, PTail) :-
+    preprocess_expr(Tail, PTail).
 
 preprocess_sequence([Expr], PPExpr) :-
     !,

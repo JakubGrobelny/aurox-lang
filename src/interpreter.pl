@@ -3,16 +3,23 @@
 :- ensure_loaded(environment).
 :- ensure_loaded(pervasives).
 :- ensure_loaded(preprocessing).
+:- ensure_loaded(eval).
 
-interpret_program(EntryPoint, PreprocessedProgram) :-
+interpret_program(EntryPoint, Results) :-
     import_core_definitions(FreshEnv),
     import_core_module(FreshEnv, NewEnv, Operators),
     parse_file(EntryPoint, Operators, AST),
     process_definitions(AST, NewEnv, Program, FinalEnv),
     typecheck_environment(FinalEnv),
     typecheck_program(FinalEnv, Program),
-    preprocess_env(FinalEnv, _),
-    preprocess_program(Program, PreprocessedProgram).
+    preprocess_env(FinalEnv, PreprocessedEnv),
+    preprocess_program(Program, PreprocessedProgram),
+    run_program(PreprocessedProgram, PreprocessedEnv, Results).
+
+run_program([], _, []) :- !.
+run_program([Expr | Exprs], Env, [Val | Vals]) :-
+    eval(Env, Expr, Val),
+    run_program(Exprs, Env, Vals).
 
 process_definitions(AST, EnvIn, Program, EnvOut) :-
     add_definitions_to_env(AST, EnvIn, EnvWithDefs, ASTNoDefs),
