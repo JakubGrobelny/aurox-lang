@@ -13,23 +13,23 @@ struct __list
 {
     std::shared_ptr<__list_node<T>> list = nullptr;
 
-    bool is_empty()
+    bool is_empty() const
     {
         return !this->list;
     }
 
-    __list preprend(const T& val)
+    __list preprend(const T& val) const
     {
         std::shared_ptr<__list_node<T>> node(new __list_node<T>(val, *this));
         return __list(node);
     }
 
-    T head()
+    T head() const 
     {
         return this->list->head;
     }
 
-    __list tail()
+    __list tail() const
     {
         return this->list->tail;
     }
@@ -71,6 +71,31 @@ struct __list_node
 
     __list_node(const T& head) 
         : head(head), tail(__list<T>(nullptr)) {};
+};
+
+
+template <typename T>
+struct __val_or_var
+{
+    enum element_type { var, val };
+    element_type type;
+
+    union
+    {
+        T elem;
+        T* ptr;
+    };
+
+    bool is_var() const
+    {
+        return this->type == element_type::var;
+    }
+
+    __val_or_var() = delete;
+    __val_or_var(T* elem)
+        : ptr(elem), type(element_type::var) {};
+    __val_or_var(const T& elem)
+        : elem(elem), type(element_type::val) {};
 };
 
 template <typename T>
@@ -122,9 +147,58 @@ bool matching (const A& l, B&& r)
     return l == r;
 }
 
+template <typename A>
+bool matching(
+    const __list<A>& xs, 
+    std::initializer_list<__val_or_var<A>> pattern,
+    __list<A>* tail
+) {
+    auto ys = xs;
+    auto iter = pattern.begin();
+
+    while (!ys.is_empty())
+    {
+        if (iter == pattern.end())
+        {
+            if (!tail)
+                return false;
+            (*tail) = ys;
+            return true;
+        }
+        else if (iter->is_var())
+        {
+            if (!matching(ys.head(), iter->ptr))
+                return false;
+        }
+        else
+        {
+            if (!matching(ys.head(), iter->elem))
+                return false;
+        }
+
+        ys = ys.tail();
+        iter++;
+    }
+
+    return false;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, __list<T>& xs) 
+{
+    out << '[';
+    while (!xs.is_empty())
+    {
+        std::cout << xs.head() << ", ";
+        xs = xs.tail();
+    }
+    out << "\b\b]";
+
+    return out;
+}
+
 int main()
 {
-
     const char* nothing = "Nothing";
     const char* something = "Something";
     const char* just = "Just";
@@ -137,14 +211,21 @@ int main()
 
     std::cout << e.name << std::endl;
 
-    __list<int> xs = {1,2,3,4};
+    __list<int> xs = {1,2,3,4,5,6,7,8};
 
-    auto ys = xs;
-    while (!ys.is_empty())
-    {
-        std::cout << ys.head() << std::endl;
-        ys = ys.tail();
-    }
+
+    int first  = -1;
+    int third = -1;
+    __list<int> tail;
+
+    std::cout << std::endl << matching(
+        xs,
+        {__val_or_var(&first), __val_or_var(2), __val_or_var(&third)},
+        &tail
+    ) << std::endl;
+
+    std::cout << first << ' ' << third << std::endl;
+    std::cout << tail << std::endl;
 
     return 0;
 }

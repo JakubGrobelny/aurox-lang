@@ -4,6 +4,7 @@
 *.fls
 *.log
 *.so
+*.out
 *.o
 */tests/*
 
