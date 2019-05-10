@@ -5,7 +5,7 @@ preprocess_program([Expr at _ | Exprs], [NewExpr | NewExprs]) :-
     preprocess_expr(Expr, NewExpr),
     preprocess_program(Exprs, NewExprs).
 
-preprocess_env(Env, NewEnv) :-
+preprocess_env(Env, NewEnv, Contents) :-
     dict_pairs(Env, _, Contents),
     preprocess_env_helper(Contents, PreprocessedContents),
     dict_create(NewEnv, globenv, PreprocessedContents).

@@ -1,5 +1,6 @@
 :- ensure_loaded(utility).
 
+eval(_, val(V), V) :- !.
 eval(Env, id(Var), Res) :-
     !,
     get_dict(Var, Env, Val),
@@ -38,7 +39,9 @@ eval(Env, app(F, Arg), Res) :-
 eval(Env, app(F, Arg), Res) :-
     !,
     eval(Env, Arg, ArgVal),
-    eval(Env, F, closure(ArgVal, LocEnv, Expr)),
+    eval(Env, F, FVal),
+    copy_term(FVal, FValCopy),
+    FValCopy = closure(ArgVal, LocEnv, Expr),
     eval(LocEnv, Expr, Res).
 eval(Env, lambda(Param, Expr), closure(Arg, LocEnv, Expr)) :-
     !,
@@ -102,7 +105,6 @@ replace_pattern_vars((H, T), Env, (NH, NT), FinalEnv) :-
 replace_pattern_vars(ADT, Env, NewADT, NewEnv) :-
     ADT =.. [Constructor, Arg],
     !,
-    % format('DEBUG: ~w\n', [Arg]),
     replace_pattern_vars(Arg, Env, NewArg, NewEnv),
     NewADT =.. [Constructor, NewArg].
 replace_pattern_vars(X, Env, X, Env).

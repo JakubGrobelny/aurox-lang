@@ -17,6 +17,12 @@ print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
     print_error(Pos, MsgFormat, MsgArgs),
     halt.
 
+fix_relative_path(FilePath, FileName, FixedPath) :-
+    atom_string(FilePath, StringPath),
+    split_string(StringPath, "/", "", SubStrings),
+    substrings_to_path(SubStrings, StrippedPath),
+    atomic_list_concat([StrippedPath, FileName], FixedPath).
+    
 fix_file_path(Path, FinalPath) :-
     unix(args([_, ProgramPath])),
     atom_string(ProgramPath, StringPath),

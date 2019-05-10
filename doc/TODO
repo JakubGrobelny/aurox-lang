@@ -8,5 +8,7 @@
 11. remove the dictionary key-value preprocessing
 12. consider keeping the type info for expressions to print it after
     execution
+13. extract variables from expressions so that closures only
+    contain necessary values
 
 

@@ -102,8 +102,9 @@ list_of_files_to_import(_, []) --> [].
 file_name_to_import(_, module_name(Module) at Pos) -->
     [tid(Module) at Pos],
     !.
-file_name_to_import(_, file_name(File) at Pos) -->
+file_name_to_import(_, file_name(FileName) at Pos) -->
     [string(File) at Pos],
+    { atomic_list_concat(File, FileName) },
     !.
 file_name_to_import(_, _) -->
     [Token],
@@ -599,6 +600,10 @@ atomic_expression(Lambda, Operators) -->
 atomic_expression(Const, _) -->
     constant(Const),
     !.
+atomic_expression(id(Operator), _) -->
+    ['`' at _],
+    !,
+    [op(Operator) at _].
 atomic_expression(id(Constructor),_) -->
     [tid(Constructor) at _],
     !.

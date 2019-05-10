@@ -12,9 +12,19 @@ interpret_program(EntryPoint, Results) :-
     process_definitions(AST, NewEnv, Program, FinalEnv),
     typecheck_environment(FinalEnv),
     typecheck_program(FinalEnv, Program),
-    preprocess_env(FinalEnv, PreprocessedEnv),
+    preprocess_env(FinalEnv, PreprocessedEnv, Contents),
+    eval_env(PreprocessedEnv, Contents, EvaluatedEnv),
     preprocess_program(Program, PreprocessedProgram),
-    run_program(PreprocessedProgram, PreprocessedEnv, Results).
+    run_program(PreprocessedProgram, EvaluatedEnv, Results).
+
+eval_env(Env, [], Env) :- !.
+eval_env(Env, ['`types'-_ | Vars], NewEnv) :-
+    !,
+    eval_env(Env, Vars, NewEnv).
+eval_env(Env, [Var-_ | Vars], FinalEnv) :-
+    eval(Env, id(Var), Val),
+    put_dict(Var, Env, val(Val), NewEnv),
+    eval_env(NewEnv, Vars, FinalEnv).
 
 run_program([], _, []) :- !.
 run_program([Expr | Exprs], Env, [Val | Vals]) :-
@@ -27,12 +37,5 @@ process_definitions(AST, EnvIn, Program, EnvOut) :-
 
 import_core_module(Env, NewEnv, Operators) :-
     fix_file_path('modules/Core.ax', File),
-    parse_file(
-        File, 
-        Core, 
-        pos('Core',0,0), 
-        [], 
-        _, 
-        Operators
-    ),
+    parse_file(File, Core, pos('Core',0,0), [], _, Operators),
     process_definitions(Core, Env, [], NewEnv).

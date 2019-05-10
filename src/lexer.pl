@@ -226,6 +226,7 @@ delimiter('(') --> ['('], !.
 delimiter(')') --> [')'], !.
 delimiter(',') --> [','], !.
 delimiter(':') --> [':'], !.
+delimiter('`') --> ['`'], !.
 delimiter(';') --> [';'].
 
 lexer(Tokens, pos(F, L, C)) -->

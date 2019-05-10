@@ -301,7 +301,7 @@ typecheck_if(CondT, _, _, Start, _) :-
     ).
 
 typecheck_logical(adt('Bool', []), adt('Bool', []), _) :- !.
-typecheck_logical( Rhs, Lhs, Start) :-
+typecheck_logical(Rhs, Lhs, Start) :-
     print_type_error(
         Start,
         'operator ~w type mismatch in logical operator arguments.\c

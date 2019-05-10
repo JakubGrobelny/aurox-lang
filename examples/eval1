@@ -1,0 +1,42 @@
+define map f xs :=
+    match xs with 
+        case [] => []
+        case [x | xs] => [f x | map f xs]
+    end
+end
+
+define filter p xs : (a -> Bool) -> [a] -> [a] =
+    match xs with
+        case [] => []
+        case [x | xs] =>
+            if p x
+                then [x | filter p xs]
+                else filter p xs
+            end
+    end 
+end
+
+define fib_iter n f0 f1 :=
+    match n with
+        case 0 => f0
+        case _ => fib_iter (n-1) f1 (f0 + f1)
+    end
+end
+
+define fib n :=
+    fib_iter n 0 1
+end
+
+defop ... 1 none
+
+define (...) b e :=
+    match (b, e) with
+        case (a, a) => [a]
+        case _ => [b | b + 1 ... e ]
+    end
+end
+
+map fib (1 ... 100)
+
+
+

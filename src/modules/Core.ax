@@ -1,3 +1,14 @@
+# Lists
+
+defop ... 1 none
+
+define (...) b e :=
+    match (b, e) with
+        case (a, a) => [a]
+        case _ => [b | b + 1 ... e ]
+    end
+end
+
 # Typedefs
 
 type Maybe a with
@@ -108,7 +119,6 @@ defop <= 6  none
 defop >= 6  none
 defop == 5  none
 defop != 5  none
-defop !  18 prefix
 
 define (<) l r : a -> a -> Bool =
     __cmp_less (l, r)
@@ -122,7 +132,7 @@ define (==) l r : a -> a -> Bool =
     __cmp_eq (l, r)
 end
 
-define (!) a : Bool -> Bool =
+define not a : Bool -> Bool =
     __not a
 end
 

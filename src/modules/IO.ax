@@ -1,0 +1,3 @@
+define print str : String -> String =
+    str
+end
