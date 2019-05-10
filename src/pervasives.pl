@@ -1,4 +1,5 @@
 :- ensure_loaded(utility).
+:- ensure_loaded(ffi).
 
 import_core_definitions(CoreEnv) :-
     dict_create(
@@ -127,6 +128,16 @@ import_core_definitions(CoreEnv) :-
                 bfun('__print') at builtin,
                 (list(adt('Char', []))->adt('Unit', [])),
                 builtin
+            ),
+            '__read_int':(
+                bfun('__read_int') at builtin,
+                (adt('Unit', [])->adt('Int', [])),
+                builtin
+            ),
+            '__read_float':(
+                bfun('__read_float') at builtin,
+                (adt('Unit', [])->adt('Float', [])),
+                builtin
             )
         ]
     ).
@@ -205,3 +216,9 @@ import_core_definitions(CoreEnv) :-
 '__print'(Chars, unit) :-
     atomic_list_concat(Chars, Str),
     format(Str).
+
+'__read_int'(_, Int) :-
+    io:read_int(Int).
+
+'__read_float'(_, Float) :-
+    io:read_float(Float).

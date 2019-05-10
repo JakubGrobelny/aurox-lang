@@ -5,7 +5,7 @@
 :- ensure_loaded(preprocessing).
 :- ensure_loaded(eval).
 
-interpret_program(EntryPoint, Results) :-
+interpret_program(EntryPoint) :-
     import_core_definitions(FreshEnv),
     import_core_module(FreshEnv, NewEnv, Operators),
     parse_file(EntryPoint, Operators, AST),
@@ -15,7 +15,7 @@ interpret_program(EntryPoint, Results) :-
     preprocess_env(FinalEnv, PreprocessedEnv, Contents),
     eval_env(PreprocessedEnv, Contents, EvaluatedEnv),
     preprocess_program(Program, PreprocessedProgram),
-    run_program(PreprocessedProgram, EvaluatedEnv, Results).
+    run_program(PreprocessedProgram, EvaluatedEnv, _).
 
 eval_env(Env, [], Env) :- !.
 eval_env(Env, ['`types'-_ | Vars], NewEnv) :-

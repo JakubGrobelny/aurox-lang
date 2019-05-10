@@ -2,4 +2,10 @@ define print : String -> Unit =
     __print
 end
 
-define read
+define read_int u : Unit -> Int =
+    __read_int ()
+end
+
+define read_float u : Unit -> Float =
+    __read_float ()
+end

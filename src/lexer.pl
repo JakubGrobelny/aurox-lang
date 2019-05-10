@@ -111,8 +111,8 @@ exponent([], 0) --> [].
 
 fraction_tail(['.' | Tail], Len) --> 
     ['.'], 
-    !, 
     digit(D), 
+    !,
     digit_seq_tail(DTail, DLen), 
     exponent(E, ELen), 
     {
@@ -279,7 +279,7 @@ lexer([Token at pos(F, L, C) | Tokens], pos(F, L, C)) -->
 lexer([Num at pos(F, L, C) | Tokens], pos(F, L, C)) -->
     digit(D), 
     !, 
-    digit_seq_tail(Digits, Len), 
+    digit_seq_tail(Digits, Len),
     fraction_tail(FTail, FLen), 
     {
         NC is C + Len + FLen + 1,

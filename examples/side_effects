@@ -1,17 +1,16 @@
-define print i : String -> Unit =
-    ()
+import
+    "import1.ax"
+    IO
 end
 
-define to_string i : Int -> String =
-    ""
+define main u :=
+    print "Enter a number: \n";
+    let n := read_int () in
+        print "The factorial of ";
+        print $ show n;
+        print " is ";
+        print $ show $ n!
+    end
 end
 
-define (+) a b : Int -> Int -> Int =
-    0
-end
-
-define print_and_add i j :=
-    print (to_string i);
-    i + j
-end
-
+main ()
