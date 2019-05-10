@@ -1,3 +1,5 @@
-define print str : String -> String =
-    str
+define print : String -> Unit =
+    __print
 end
+
+define read

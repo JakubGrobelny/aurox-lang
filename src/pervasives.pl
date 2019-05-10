@@ -107,6 +107,26 @@ import_core_definitions(CoreEnv) :-
                 bfun('__not') at builtin,
                 (adt('Bool', [])->adt('Bool', [])),
                 builtin
+            ),
+            '__int_to_float':(
+                bfun('__int_to_float') at builtin,
+                (adt('Int', [])->adt('Float', [])),
+                builtin
+            ),
+            '__float_to_int':(
+                bfun('__float_to_int') at builtin,
+                (adt('Float', [])->adt('Int', [])),
+                builtin
+            ),
+            '__show':(
+                bfun('__show') at builtin,
+                (param(a)->list(adt('Char', []))),
+                builtin
+            ),
+            '__print':(
+                bfun('__print') at builtin,
+                (list(adt('Char', []))->adt('Unit', [])),
+                builtin
             )
         ]
     ).
@@ -171,3 +191,17 @@ import_core_definitions(CoreEnv) :-
     !.
 '__cmp_neq'((_, _), false).
 
+'__float_to_int'(Float, Int) :-
+    Int is truncate(Float).
+
+'__int_to_float'(Int, Float) :-
+    Float is float(Int).
+
+'__show'(Val, CharList) :-
+    prettify_expr(Val, Prettified),
+    term_to_atom(Prettified, Atom),
+    atom_chars(Atom, CharList).
+
+'__print'(Chars, unit) :-
+    atomic_list_concat(Chars, Str),
+    format(Str).

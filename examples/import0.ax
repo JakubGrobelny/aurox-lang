@@ -3,4 +3,4 @@ import
     IO
 end
 
-500!
+5! |> show |> print

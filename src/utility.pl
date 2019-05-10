@@ -44,18 +44,6 @@ list_of_tuple((H, T), [H | Ts]) :-
     !.
 list_of_tuple(X, [X]).
 
-pretty_env(Env) :-
-    dict_pairs(Env, _, Pairs),
-    pretty_env_helper(Pairs).
-
-pretty_env_helper([]) :- nl, !.
-pretty_env_helper(['`types'-_ | T]) :-
-    !,
-    pretty_env_helper(T).
-pretty_env_helper([Name-(_,T,_) | Defs]) :-
-    format('~w :: ~w\n', [Name, T]),
-    pretty_env_helper(Defs).
-
 unique_list(Xs) :-
     \+ not_unique_list(Xs, _).
 
@@ -67,29 +55,4 @@ not_unique_list_helper([X, X | _], X) :- !.
 not_unique_list_helper([_ | Xs], X)  :-
     not_unique_list_helper(Xs, X).
 
-print_term_tree(Term) :-
-    print_term_tree(Term, 0).
-print_term_tree(Term, Indentation) :-
-    atomic(Term),
-    !,
-    tab(Indentation),
-    format('~w', [Term]).
-print_term_tree(Xs, Indentation) :-
-    is_list(Xs),
-    !,
-    tab(Indentation),
-    format('~w\n', [Xs]).
-print_term_tree(Term, Indentation) :-
-    Term =.. [Functor | Args],
-    tab(Indentation),
-    format('~w(\n', [Functor]),
-    NextIndent is Indentation + 4,
-    print_term_trees(Args, NextIndent),
-    format('\n', []),
-    tab(Indentation),
-    write(')').
-
-print_term_trees([], _) :- !.
-print_term_trees([T | Ts], Indent) :-
-    print_term_tree(T, Indent),
-    print_term_trees(Ts, Indent).
+prettify_expr(X, X).

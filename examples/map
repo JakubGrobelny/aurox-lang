@@ -23,5 +23,3 @@ define filter p xs :=
             end
     end 
 end
-
-
