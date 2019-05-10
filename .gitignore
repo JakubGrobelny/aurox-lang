@@ -3,4 +3,7 @@
 *.fdb_latexmk
 *.fls
 *.log
+*.so
+*.o
 */tests/*
+
