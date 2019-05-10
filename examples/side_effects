@@ -4,7 +4,7 @@ import
 end
 
 define main u :=
-    print "Enter a number: \n";
+    print "Enter a number:\n";
     let n := read_int () in
         print "The factorial of ";
         print $ show n;

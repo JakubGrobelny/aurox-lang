@@ -218,7 +218,14 @@ import_core_definitions(CoreEnv) :-
     format(Str).
 
 '__read_int'(_, Int) :-
-    io:read_int(Int).
+    io:read_int(Int),
+    !.
+'__read_int'(_, _) :-
+    throw(runtime_error('read_int: invalid input')).
 
 '__read_float'(_, Float) :-
-    io:read_float(Float).
+    io:read_float(Float),
+    !.
+'__read_float'(_, _) :-
+    throw(runtime_error('read_int: invalid input')).
+

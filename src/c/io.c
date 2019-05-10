@@ -29,8 +29,21 @@ static foreign_t pl_read_float(term_t to)
     PL_fail;
 }
 
+static foreign_t pl_printf(term_t in)
+{
+    char* str;
+    if (PL_get_atom_chars(in, &str))
+    {
+        printf("%s", str);
+        PL_succeed;
+    }
+
+    PL_exception;
+}
+
 install_t install_io()
 { 
     PL_register_foreign("read_int", 1, pl_read_int, 0);
     PL_register_foreign("read_float", 1, pl_read_float, 0);
+    PL_register_foreign("printf", 1, pl_printf, 0);
 }

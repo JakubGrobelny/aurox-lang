@@ -1,0 +1,21 @@
+define map f xs : (a->b) -> [a] -> [b] =
+    match xs with
+        case [] => []
+        case [x | xs] => [f x | map f xs]
+    end
+end
+
+define xs := [1,2,3,4,5] end
+
+map (`+ 10) xs |> show |> print
+
+type Maybe a with
+    case Nothing
+    case Just a
+end 
+
+define unwrap x :=
+    case Nothing => 0
+    case Just (Just a) => a
+    case Just Nothing => 0
+end
