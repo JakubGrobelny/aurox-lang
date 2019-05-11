@@ -91,7 +91,37 @@ preprocess_sequence([E | Es], (PE;PEs)) :-
     preprocess_sequence(Es, PEs).
 
 preprocess_pmatch_cases([], []) :- !.
-preprocess_pmatch_cases([case(P, E at _) | Cases], [case(PP, PE) | PCases]) :-
+preprocess_pmatch_cases(
+    [case(P, E at _) | Cases], 
+    [case(FinalPP, LocEnv, PE) | PCases]
+) :-
     preprocess_expr(P, PP),
+    replace_pattern_vars(PP, locenv{}, FinalPP, LocEnv),
     preprocess_expr(E, PE),
     preprocess_pmatch_cases(Cases, PCases).
+
+replace_pattern_vars(id(Var), Env, LogVar, Env) :-
+    get_dict(Var, Env, Val),
+    var(Val),
+    !,
+    LogVar = Val.
+replace_pattern_vars(wildcard, Env, _, Env) :- !.
+replace_pattern_vars(id(Var), Env, LogVar, NewEnv) :-
+    put_dict(Var, Env, LogVar, NewEnv),
+    !.
+replace_pattern_vars([], Env, [], Env) :- !.
+replace_pattern_vars([X | Xs], Env, [Y | Ys], FinalEnv) :-
+    !,
+    replace_pattern_vars(X, Env, Y, NewEnv),
+    replace_pattern_vars(Xs, NewEnv, Ys, FinalEnv).
+replace_pattern_vars((H, T), Env, (NH, NT), FinalEnv) :-
+    !,
+    replace_pattern_vars(H, Env, NH, NewEnv),
+    replace_pattern_vars(T, NewEnv, NT, FinalEnv).
+replace_pattern_vars(ADT, Env, NewADT, NewEnv) :-
+    ADT =.. [Constructor, Arg],
+    !,
+    replace_pattern_vars(Arg, Env, NewArg, NewEnv),
+    NewADT =.. [Constructor, NewArg].
+replace_pattern_vars(X, Env, X, Env).
+

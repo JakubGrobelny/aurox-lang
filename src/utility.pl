@@ -17,6 +17,10 @@ print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
     print_error(Pos, MsgFormat, MsgArgs),
     halt.
 
+dict_empty(Dict) :-
+    \+ get_dict(_, Dict, _),
+    !.
+
 fix_relative_path(FilePath, FileName, FixedPath) :-
     atom_string(FilePath, StringPath),
     split_string(StringPath, "/", "", SubStrings),

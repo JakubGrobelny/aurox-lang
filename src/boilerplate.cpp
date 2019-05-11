@@ -1,9 +1,7 @@
 #include <iostream>
 #include <functional>
 #include <memory>
-#include <forward_list>
 #include <cstdint>
-#include <map>
 #include <string>
 #include <cstring>
 #include <tuple>
@@ -120,7 +118,7 @@ struct __enum
     __enum(const char* name = nullptr)
         : name(name) {};
 };
-
+         
 bool matching(const __enum& val, __enum&& pattern)
 {
     return !strcmp(val.name, pattern.name);
@@ -129,9 +127,7 @@ bool matching(const __enum& val, __enum&& pattern)
 template <typename A, typename B>
 bool matching(const __constructor<A>& val, __constructor<B>&& pattern)
 {
-    if (strcmp(val.name, pattern.name))
-        return false;
-    return matching(val.value, pattern.value);
+    return !strcmp(val.name, pattern.name) && matching(val.value, pattern.value);
 }
 
 template <typename A, typename B>
@@ -186,7 +182,28 @@ bool matching(
         iter++;
     }
 
-    return false;
+    return !pattern.size();
+}
+
+template<int N, typename ...As>
+bool matching(const std::tuple<As...>& val, std::tuple<__val_or_var<As>...> pattern)
+{
+    if constexpr(N >= 0)
+    {
+        if (std::get<N>(pattern).is_var())
+        {
+            (*std::get<N>(pattern).ptr) = std::get<N>(val);
+            return matching<N-1, As...>(val, pattern);
+        }
+        else
+        {
+            if (!matching(std::get<N>(val), std::get<N>(pattern).elem))
+                return false;
+            return matching<N-1, As...>(val, pattern);
+        }
+    }
+    else
+        return false;
 }
 
 template <typename T>
@@ -219,7 +236,6 @@ int main()
 
     __list<int> xs = {1,2,3,4,5,6,7,8};
 
-
     int first  = -1;
     int third = -1;
     __list<int> tail;
@@ -232,6 +248,23 @@ int main()
 
     std::cout << first << ' ' << third << std::endl;
     std::cout << tail << std::endl;
+
+    std::tuple<> empty0;
+    std::tuple<> empty1;
+
+    std::cout << matching(empty0, empty1) << std::endl;
+
+    std::tuple<int, float, char> tuple = {42, 4.2, 'A'};
+    int a = -100;
+    float b = -100.0f;
+    std::tuple<__val_or_var<int>, __val_or_var<float>, __val_or_var<char>> pattern = {&a, &b, 'A'};
+
+    std::cout << std::endl << matching<2, int, float, char>(
+        tuple,
+        pattern
+    ) << std::endl << std::endl;
+
+    std::cout << a << std::endl << b << std::endl;
 
     return 0;
 }

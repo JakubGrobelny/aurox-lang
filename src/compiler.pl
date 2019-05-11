@@ -1,64 +1,80 @@
 :- ensure_loaded(utility).
+:- ensure_loaded(typechecker).
 
 % TODO:
 % 1. add type information and env during compilation
-
 
 compile_env(Env, Stream) :-
     write_boilerplate(Stream),
     dict_pairs(Env, _, Contents),
     write_function_prototypes(Contents, Stream),
-    compile_env_helper(Contents, Stream).
+    compile_env_helper(Contents, Env, Stream).
 
-compile_program(Program, Stream) :-
+compile_program(Program, Env, Stream) :-
     format(Stream, "int main(int argc, char* argv[])\n{\n", []),
-    compile_program_helper(Program, Stream),
+    compile_program_helper(Program, Env, Stream),
     format(Stream, "return 0;\n}\n", []).
 
-compile_program_helper([], _) :- !.
-compile_program_helper([Expr at _ | Exprs], File) :-
-    compile_expr(Expr, File),
-    compile_program(Exprs, File).
+compile_program_helper([], Env, _) :- !.
+compile_program_helper([Expr at _ | Exprs], Env, File) :-
+    compile_expr(Expr, Env, File),
+    compile_program_helper(Exprs, Env, File).
 
 write_boilerplate(File) :-
     fix_file_path('boilerplate.cpp', BoilerplatePath),
     open(BoilerplatePath, read, Boilerplate),
+    format(Boilerplate, "//file generated automatically\n\n", []),
     read_string(Boilerplate, "", "", _, Contents),
     format(File, Contents, []),
     close(Boilerplate).
 
-compile_expr(int(N), File) :-
+compile_expr(int(N), _, File) :-
     !,
     format(File, " ~w ", [N]).
-compile_expr(float(X), File) :-
+compile_expr(float(X), _, File) :-
     !,
     format(File, " ~w ", [X]).
-compile_expr(char(C), File) :-
+compile_expr(char(C), _, File) :-
     !,
     % TODO: escape sequences
     format(File, " '~w' ", [C]).
-compile_expr(bool(B), File) :-
+compile_expr(bool(B), _, File) :-
     !,
     format(File, " ~w ", [B]).
-compile_expr(unit, File) :-
+compile_expr(unit, _, File) :-
     !,
     format(File, " unit::unit ", []).
-compile_expr(wildcard, File) :-
+compile_expr(wildcard, _, File) :-
     !,
     format(File," __wildcard ", []).
-compile_expr(id(Var), File) :-
+compile_expr(id(Var), _, File) :-
     !,
     normalize_name(Var, NVar),
-    format(File, " ~w ", [NVar]).
-compile_expr(enum(Name), File) :-
+    format(File, " __~w__ ", [NVar]).
+compile_expr(enum(Name), _, File) :-
     !,
     normalize_name(Name, NName),
     format(File, " __enum(\"~w\") ", [NName]).
-compile_expr(adt(Name, Arg), File) :-
+compile_expr(adt(Name, Arg), Env, File) :-
     !,
-    format(File,  "__constructor(\"~w\",", [Name]),
-    compile_expr(Arg, File),
+    infer_type(Env, adt(Name, Arg), adt(_, ParamType), _),
+    translate_type(ParamType, CppType),
+    format(File,  "__constructor<~w>(\"~w\",", [Name, CppType]),
+    compile_expr(Arg, Env, File),
     format(File, ")\n", []).
+compile_expr(if(Cond at _, Cons at _, Alt at _), Env, File) :-
+    !,
+    format(File, "if (", []),
+    compile_expr(Cond, Env, File),
+    format(File, ") {\n", []),
+    compile_expr(Cons, Env, File),
+    format(File, "\n} else {\n", []),
+    compile_expr(Alt, Env, File),
+    format(File, "\n}\n", []).
+compile_expr(let((id(Var), Type, Val at _, Expr at _), Env, File) :-
+    !,
+    format(File, "(", []),
+    compile_expr(lambda(Var, Expr), Env, File),
 
 
 write_function_prototypes([], _) :- !.
@@ -75,8 +91,8 @@ write_function_prototypes([_ | Env], File) :-
     write_function_prototypes(Env, File).
 
 write_function_signature(ArgT, RetT, ArgName, FunName, File) :-
-    translate_type(ArgT, ArgCppType),
-    translate_type(RetT, RetCppType),
+    translate_type(ArgT, ArgCppType, ArgVars),
+    translate_type(RetT, RetCppType, RetVars),
     normalize_name(FunName, CppName),
     normalize_name(ArgName, CppArg),
     format(
@@ -96,13 +112,18 @@ compile_env_helper([Var-(lambda(Arg, Expr) at _, (A->B), _) | Env], File) :-
     format(File,"\n}\n", []),
     compile_env_helper(Env, File).
 compile_env_helper([Var-(Val at _, Type, _) | Env], File) :-
-    translate_type(Type, CppType),
+    translate_type(Type, CppType, _),
     normalize_name(Var, CppName),
     format(File, "~w ~w =", [CppType, CppName]),
     compile_expr(Val, File),
     format(File, "\n", []),
     compile_env_helper(Env, File).
 
+translate_type(Var, Type) :-
+    var(Var),
+    !,
+    term_string(Var, StrVar),
+    string_concat("V", StrVar, Type).
 translate_type(param(A), Type) :-
     !,
     atom_string(A, AStr),

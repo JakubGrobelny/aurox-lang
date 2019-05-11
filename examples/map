@@ -1,0 +1,24 @@
+import
+    IO
+end 
+
+define map f xs :=
+    match xs with
+        case [] => []
+        case [x | xs] => [f x | map f xs]
+    end
+end
+
+map (`+ 10) (0 ... 1000) |> show |> print
+
+define traverse xs :=
+    match xs with
+        case [] => []
+        case [x | xs] => [x | traverse xs]
+    end
+end 
+
+# let n := read_int () in
+#     map (`+ 1) (0...n) |> show |> print
+# end
+

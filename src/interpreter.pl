@@ -15,7 +15,7 @@ interpret_program(EntryPoint) :-
     preprocess_env(FinalEnv, PreprocessedEnv, Contents),
     eval_env(PreprocessedEnv, Contents, EvaluatedEnv),
     preprocess_program(Program, PreprocessedProgram),
-    run_program(PreprocessedProgram, EvaluatedEnv, _).
+    time(run_program(PreprocessedProgram, EvaluatedEnv, _)).
 
 eval_env(Env, [], Env) :- !.
 eval_env(Env, ['`types'-_ | Vars], NewEnv) :-
