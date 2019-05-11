@@ -6,6 +6,12 @@
 #include <map>
 #include <string>
 #include <cstring>
+#include <tuple>
+
+enum class unit
+{
+    unit
+};
 
 template <typename T> struct __list_node; 
 template <typename T>

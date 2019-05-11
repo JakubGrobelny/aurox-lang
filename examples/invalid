@@ -1,7 +1,0 @@
-define id a : Qwerty -> Qwerty =
-    a
-end
-
-define voidify a : a -> Void =
-    a
-end
