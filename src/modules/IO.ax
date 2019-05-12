@@ -2,11 +2,11 @@ define print : String -> Unit =
     __print
 end
 
-define read_int u : Unit -> Int =
+define read_int u : Unit -> Maybe Int =
     __read_int ()
 end
 
-define read_float u : Unit -> Float =
+define read_float u : Unit -> Maybe Float =
     __read_float ()
 end
 

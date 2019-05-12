@@ -3,10 +3,8 @@
 merge_operators(ops(I0, P0), ops(I1, P1), ops(I2, P2)) :-
     dict_pairs(I0, _, IPairs),
     dict_pairs(P0, _, PPairs),
-    replace_functor(IPairs, ':', IPairsReplaced),
-    replace_functor(PPairs, ':', PPairsReplaced),
-    put_dict(IPairsReplaced, I1, I2),
-    put_dict(PPairsReplaced, P1, P2).
+    put_dict(IPairs, I1, I2),
+    put_dict(PPairs, P1, P2).
 
 define_operator_if_needed(Op, Priority, Assoc, Ops, Ops) :-
     is_operator_type(Op, Priority, Assoc, Ops),
@@ -16,6 +14,11 @@ define_operator_if_needed(Op, 10, Assoc, ops(I, P), NOps) :-
     \+ get_dict(Op, I, _),
     \+ get_dict(Op, P, _),
     !,
+    print_warning(
+        pos(unknown, '?', '?'), 
+        "Undefined operator ~w, assumed default associativity and priority",
+        [Op]
+    ),
     update_operators(Op, 10, left, ops(I, P), NOps).
 
 valid_priority(N, _) :-
@@ -54,7 +57,7 @@ update_operators(
 ) :-
     infix(Assoc),
     !,
-    put_dict(Op, Infix, (Priority, Assoc), NewInfix).
+    add_operator(Op, Infix, (Priority, Assoc), NewInfix).
 update_operators(
     Op, 
     Priority, 
@@ -62,7 +65,19 @@ update_operators(
     ops(Infix, PostPrefix), 
     ops(Infix, NewPostPrefix)
 ) :-
-    put_dict(Op, PostPrefix, (Priority, UnaryAssoc), NewPostPrefix).
+    add_operator(Op, PostPrefix, (Priority, UnaryAssoc), NewPostPrefix).
+
+add_operator(Op, Ops, Val, NewOps) :-
+    get_dict(Op, Ops, _),
+    !,
+    print_warning(
+        pos(unknown, '?', '?'),
+        "redefinition of operator ~w",
+        [Ops]
+    ),
+    put_dict(Op, Ops, Val, NewOps).
+add_operator(Op, Ops, Val, NewOps) :-
+    put_dict(Op, Ops, Val, NewOps).
 
 is_operator_type(Op, Priority, Assoc, ops(Infix, _)) :-
     member(Assoc, [left, right, none]),

@@ -1,0 +1,35 @@
+import 
+    Monad
+end
+
+type Range a with
+    case LNull
+    case LCons (a, (Unit -> Range a))
+end
+
+define range x f : a-> (a -> a) -> Range a =
+    LCons (x, {|u| range (f x) f})
+end
+
+define range_head r : Range a -> Maybe a =
+    match r with
+        case LNull => Nothing
+        case LCons (a, _) => Just a
+    end
+end
+
+define range_tail r : Range a -> Maybe (Range a) =
+    match r with
+        case LNull => Nothing
+        case LCons (_, t) => Just $ t ()
+    end
+end
+
+define range_take r n : Range a -> Int -> Maybe [a] =
+    match (r, n) with
+        case _, 0 => maybe_return []
+        case LNull, _ => Nothing
+        case LCons (a, tl), n => 
+            range_take (tl ()) (n-1) >>= { | xs | Just [a | xs] }
+    end 
+end

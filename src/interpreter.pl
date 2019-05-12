@@ -3,11 +3,27 @@
 :- ensure_loaded(environment).
 :- ensure_loaded(intrinsics).
 :- ensure_loaded(preprocessing).
+:- ensure_loaded(repl).
 :- ensure_loaded(eval).
 
 interpret_program(EntryPoint) :-
-    import_core_definitions(FreshEnv),
-    import_core_module(FreshEnv, NewEnv, Operators), 
+
+    % import_core_definitions(FreshEnv),
+    % import_core_module(FreshEnv, NewEnv, Operators), 
+    NewEnv = globenv{
+    append:(_, (list(param(a))->list(param(a))->list(param(a))), builtin),
+    flatten:(_, (list(list(param(a)))->list(param(a))), builtin),
+            '`types':types{
+                'Int'  : (0, builtin),
+                'Bool' : (0, builtin),
+                'Char' : (0, builtin),
+                'Void' : (0, builtin),
+                'Float': (0, builtin),
+                'Unit' : (0, builtin)
+            }
+        },
+    empty_operator_list(Operators),
+
     parse_file(EntryPoint, Operators, AST),
     process_definitions(AST, NewEnv, Program, FinalEnv),
     typecheck_environment(FinalEnv),

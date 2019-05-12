@@ -61,11 +61,11 @@ program(DepsAST, Operators, NewOperators, Deps, NewDeps) -->
             DepsOperators, % operators defined in dependencies
             UpdatedDeps, % list of imported modules after this import
             DepsAST, % AST of imported dependencies with Program as tail
-            Program % uninstantiated variable used to append rest of the program
-        ),
-        merge_operators(Operators, DepsOperators, MergedOperators)
+            Program, % uninstantiated variable used to append rest of the program
+            Operators
+        )
     },
-    program(Program, MergedOperators, NewOperators, UpdatedDeps, NewDeps).
+    program(Program, DepsOperators, NewOperators, UpdatedDeps, NewDeps).
 program([Definition | Program], Operators, NewOperators, Deps, NewDeps) -->
     [keyword(define) at DefineStart],
     !,

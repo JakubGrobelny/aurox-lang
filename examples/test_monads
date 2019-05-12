@@ -1,0 +1,10 @@
+# import
+#     Monads
+# end
+
+define list_bind xs f : [a] -> (a -> [b]) -> [b] =
+    match xs with
+        case [] => []
+        case [x | xs] => flatten [f x | list_bind xs f]
+    end
+end

@@ -24,7 +24,7 @@ typecheck_environment([('`types'-_) | Tail], Env) :-
 typecheck_environment([_-(_, _, builtin) | Tail], Env) :-
     !,
     typecheck_environment(Tail, Env).
-typecheck_environment([_-(Val at Pos, TSig, _) | Vars], Env) :-
+typecheck_environment([Var-(Val at Pos, TSig, _) | Vars], Env) :-
     get_dict('`types', Env, Types),
     check_if_types_defined(Types, TSig, Pos),
     % fix_type_signature(TSig, Type),
@@ -34,7 +34,6 @@ typecheck_environment([_-(Val at Pos, TSig, _) | Vars], Env) :-
     typecheck_environment(Vars, Env).
 typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     infer_type(Env, Val, ValType, Pos),
-    format("xd: ~w = ~w :: ~w\n", [Var, Val, Type]),
     \+ var(ValType),
     !,
     print_type_error(

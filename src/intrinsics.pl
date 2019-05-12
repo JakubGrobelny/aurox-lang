@@ -131,12 +131,12 @@ import_core_definitions(CoreEnv) :-
             ),
             '__read_int':(
                 bfun('__read_int') at builtin,
-                (adt('Unit', [])->adt('Int', [])),
+                (adt('Unit', [])->adt('Maybe', [adt('Int', [])])),
                 builtin
             ),
             '__read_float':(
                 bfun('__read_float') at builtin,
-                (adt('Unit', [])->adt('Float', [])),
+                (adt('Unit', [])->adt('Maybe', [adt('Float', [])])),
                 builtin
             ),
             '__head':(
@@ -249,21 +249,19 @@ import_core_definitions(CoreEnv) :-
     format(Str),
     flush_output(Out).
 
-'__read_int'(_, Int) :-
+'__read_int'(_, 'Just'(Int)) :-
     % read(Int),
     % integer(Int),
     io:read_int(Int),
     !.
-'__read_int'(_, _) :-
-    throw(runtime_error('read_int: invalid input')).
+'__read_int'(_, 'Nothing').
 
-'__read_float'(_, Float) :-
+'__read_float'(_, 'Just'(Float)) :-
     % read(Float),
     % float(Float),/*  */
     io:read_float(Float),
     !.
-'__read_float'(_, _) :-
-    throw(runtime_error('read_int: invalid input')).
+'__read_float'(_, 'Nothing').
 
 '__head'([X|_], X) :- !.
 '__head'([], _) :-

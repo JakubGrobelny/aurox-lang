@@ -2,16 +2,15 @@
 :- ensure_loaded(parser).
 :- ensure_loaded(utility).
 
-import_dependencies([], Deps, EmptyOps, Deps, X, X) :-
-    empty_operator_list(EmptyOps),
-    !.
+import_dependencies([], Deps, Ops, Deps, X, X, Ops) :- !.
 import_dependencies(
     [module_name(Name) at FStart | Deps], 
     AlreadyImported,
-    Operators, 
+    RestOps, 
     FinalImports, 
     OutputProgram,
-    X
+    X,
+    PrevOps
 ) :-
     \+ member(module_name(Name), AlreadyImported),
     !,
@@ -23,18 +22,19 @@ import_dependencies(
         FStart,
         [module_name(Name) | AlreadyImported],
         NewImports,
+        PrevOps,
         ModuleOps
     ),
-    import_dependencies(Deps, NewImports, RestOps, FinalImports, RestAST, X),
-    append(ModuleAST, RestAST, OutputProgram),
-    merge_operators(ModuleOps, RestOps, Operators).
+    import_dependencies(Deps, NewImports, RestOps, FinalImports, RestAST, X, ModuleOps),
+    append(ModuleAST, RestAST, OutputProgram).
 import_dependencies(
     [file_name(File) at pos(F, L, C) | Deps],
     AlreadyImported,
-    Operators,
+    RestOperators,
     FinalDeps,
     OutputProgram,
-    X
+    X,
+    PrevOps
 ) :-
     \+ member(file_name(File), AlreadyImported),
     !,
@@ -45,6 +45,7 @@ import_dependencies(
         pos(F, L, C), 
         [file_name(File) | AlreadyImported],
         NewlyImported,
+        PrevOps,
         FileOperators
     ),
     import_dependencies(
@@ -53,17 +54,18 @@ import_dependencies(
         RestOperators,
         FinalDeps,
         RestProgram,
-        X
+        X,
+        FileOperators
     ),
-    append(DepAST, RestProgram, OutputProgram),
-    merge_operators(FileOperators, RestOperators, Operators).
+    append(DepAST, RestProgram, OutputProgram).
 import_dependencies(
     [_ | Deps],
     Imported,
     Operators,
     DepsAcc,
     OutputProgram,
-    X
+    X,
+    PrevOps
 ) :-
     import_dependencies(
         Deps, 
@@ -71,6 +73,7 @@ import_dependencies(
         Operators,
         DepsAcc,
         OutputProgram,
-        X
+        X,
+        PrevOps
     ). 
     

@@ -1,3 +1,42 @@
+# Comparisons
+
+defop <  6  none
+defop >  6  none
+defop <= 6  none
+defop >= 6  none
+defop == 5  none
+defop != 5  none
+
+define (<) l r : a -> a -> Bool =
+    __cmp_less (l, r)
+end
+
+define (>) l r : a -> a -> Bool =
+    __cmp_great (l, r)
+end
+
+define (==) l r : a -> a -> Bool =
+    __cmp_eq (l, r)
+end
+
+define not a : Bool -> Bool =
+    __not a
+end
+
+define (<=) l r : a -> a -> Bool =
+    __cmp_less_eq (l, r)
+end
+
+define (>=) l r : a -> a -> Bool =
+    __cmp_great_eq (l, r)
+end
+
+define (!=) l r : a -> a -> Bool =
+    __cmp_neq (l, r)
+end
+
+# System
+
 define exit u : Unit -> Unit =
     __exit u
 end
@@ -124,6 +163,10 @@ defop .  20 right
 defop $  0  right
 defop |> 0  left
 
+define flip f x y : (a -> b -> c) -> b -> a -> c =
+    f y x
+end
+
 define ($) f x : (a -> b) -> a -> b =
     f x
 end
@@ -138,41 +181,4 @@ end
 
 define fix f x : ((a -> b) -> a -> b) -> a -> b =
     f (fix f) x
-end
-
-# Comparisons
-
-defop <  6  none
-defop >  6  none
-defop <= 6  none
-defop >= 6  none
-defop == 5  none
-defop != 5  none
-
-define (<) l r : a -> a -> Bool =
-    __cmp_less (l, r)
-end
-
-define (>) l r : a -> a -> Bool =
-    __cmp_great (l, r)
-end
-
-define (==) l r : a -> a -> Bool =
-    __cmp_eq (l, r)
-end
-
-define not a : Bool -> Bool =
-    __not a
-end
-
-define (<=) l r : a -> a -> Bool =
-    __cmp_less_eq (l, r)
-end
-
-define (>=) l r : a -> a -> Bool =
-    __cmp_great_eq (l, r)
-end
-
-define (!=) l r : a -> a -> Bool =
-    __cmp_neq (l, r)
 end
