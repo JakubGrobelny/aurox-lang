@@ -92,10 +92,15 @@ preprocess_sequence([E | Es], (PE;PEs)) :-
 preprocess_pmatch_cases([], []) :- !.
 preprocess_pmatch_cases(
     [case(P, E at _) | Cases], 
-    [case(FinalPP, LocEnv, PE) | PCases]
+    [case(PPAtom, PE) | PCases]
 ) :-
     preprocess_expr(P, PP),
     replace_pattern_vars(PP, locenv{}, FinalPP, LocEnv),
+    dict_pairs(LocEnv, _, Pairs),
+    replace_functor(Pairs, ':', Substitutions),
+    term_to_atom(FinalPP, PPAtom),
+    Goal =.. [PPAtom, FinalPP, Substitutions],
+    assert(Goal),
     preprocess_expr(E, PE),
     preprocess_pmatch_cases(Cases, PCases).
 
@@ -121,4 +126,6 @@ replace_pattern_vars((H, T), Env, (NH, NT), FinalEnv) :-
     replace_pattern_vars(H, Env, NH, NewEnv),
     replace_pattern_vars(T, NewEnv, NT, FinalEnv).
 replace_pattern_vars(X, Env, X, Env).
+
+
 

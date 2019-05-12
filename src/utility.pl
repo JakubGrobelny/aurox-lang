@@ -67,3 +67,9 @@ prettify_expr(closure(Arg, _, Expr), fun(ArgP) -> ExprP) :-
     prettify_expr(Arg, ArgP),
     prettify_expr(Expr, ExprP).
 prettify_expr(X, X).
+
+replace_functor([], _, []) :- !.
+replace_functor([X | Xs], F, [Y | Ys]) :-
+    X =.. [_ | Args],
+    Y =.. [F | Args],
+    replace_functor(Xs, F, Ys).
