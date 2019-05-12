@@ -62,10 +62,9 @@ not_unique_list_helper([X, X | _], X) :- !.
 not_unique_list_helper([_ | Xs], X)  :-
     not_unique_list_helper(Xs, X).
 
-prettify_expr(closure(Arg, _, Expr), fun(ArgP) -> ExprP) :-
+prettify_expr(closure(Arg, _, _), fun(ArgP)) :-
     !,
-    prettify_expr(Arg, ArgP),
-    prettify_expr(Expr, ExprP).
+    prettify_expr(Arg, ArgP).
 prettify_expr(X, X).
 
 replace_functor([], _, []) :- !.

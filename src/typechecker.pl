@@ -27,10 +27,10 @@ typecheck_environment([_-(_, _, builtin) | Tail], Env) :-
 typecheck_environment([_-(Val at Pos, TSig, _) | Vars], Env) :-
     get_dict('`types', Env, Types),
     check_if_types_defined(Types, TSig, Pos),
-    fix_type_signature(TSig, Type),
+    % fix_type_signature(TSig, Type),
     infer_type(Env, Val, TSig, Pos),
     !,
-    \+ var(Type),
+    % \+ var(Type),
     typecheck_environment(Vars, Env).
 typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     infer_type(Env, Val, ValType, Pos),

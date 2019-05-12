@@ -1,3 +1,7 @@
+define exit u : Unit -> Unit =
+    __exit u
+end
+
 # Tuples 
 
 define first t : (a, b) -> a =
