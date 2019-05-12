@@ -43,6 +43,9 @@ substrings_to_path([P | Ps], Path) :-
 tuple_of_list(Xs, T) :-
     list_of_tuple(T, Xs).
 
+list_of_tuple(X, [X]) :-
+    var(X),
+    !.
 list_of_tuple((H, T), [H | Ts]) :-
     list_of_tuple(T, Ts),
     !.
@@ -59,4 +62,8 @@ not_unique_list_helper([X, X | _], X) :- !.
 not_unique_list_helper([_ | Xs], X)  :-
     not_unique_list_helper(Xs, X).
 
+prettify_expr(closure(Arg, _, Expr), fun(ArgP) -> ExprP) :-
+    !,
+    prettify_expr(Arg, ArgP),
+    prettify_expr(Expr, ExprP).
 prettify_expr(X, X).

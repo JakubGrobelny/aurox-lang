@@ -34,11 +34,12 @@ typecheck_environment([_-(Val at Pos, TSig, _) | Vars], Env) :-
     typecheck_environment(Vars, Env).
 typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     infer_type(Env, Val, ValType, Pos),
+    format("xd: ~w = ~w :: ~w\n", [Var, Val, Type]),
     \+ var(ValType),
     !,
     print_type_error(
         ValPos,
-        'The type ~w of variable ~w does not match the type \c 
+        'The type ~w of value ~w does not match the type \c 
          annotation ~w specified in the definition of ~w',
         [type(ValType), Val, type(Type), Var]
     ).
@@ -260,7 +261,6 @@ typecheck_tuple(Env, N, (E, Es), (ET, EsT), Pos) :-
     typecheck_tuple(Env, M, Es, EsT, Pos).
 
 typecheck_list(_, _, [], _) :- !.
-
 typecheck_list(Env, ExpectedType, [H | T], Pos) :-
     infer_type(Env, H, ExpectedType, Pos),
     !,
@@ -273,7 +273,7 @@ typecheck_list(Env, ExpectedType, [H | _], Pos) :-
     print_type_error(
         Pos,
         'type mismatch between list of type ~w and the list element of type ~w',
-        [type(ExpectedType), type(HType)]
+    [type(ExpectedType), type(HType)]
     ).
 typecheck_list(Env, ExpectedType, Tail, Pos) :-
     infer_type(Env, Tail, TailType, Pos),
@@ -304,7 +304,7 @@ typecheck_logical(adt('Bool', []), adt('Bool', []), _) :- !.
 typecheck_logical(Rhs, Lhs, Start) :-
     print_type_error(
         Start,
-        'operator ~w type mismatch in logical operator arguments.\c
+        'logical operator type mismatch in logical operator arguments.\c
          Expected Bool and Bool, got ~w and ~w',
         [type(Lhs), type(Rhs)]
     ).
@@ -435,11 +435,17 @@ map_variable_to_type([], _, []) :- !.
 map_variable_to_type(tuple(N, Types), Map, tuple(N, MTypes)) :-
     !,
     map_variable_to_tuple(Types, Map, MTypes).
+map_variable_to_type(list(T), Map, list(MT)) :-
+    !,
+    map_variable_to_type(T, Map, MT).
 map_variable_to_type(T, Map, MT) :-
     T =.. [Op | Args],
-    map_variable_to_tuple(Args, Map, MArgs),
+    map_variable_to_type(Args, Map, MArgs),
     MT =.. [Op | MArgs].
-    
+
+map_variable_to_tuple(Var, _, Var) :-
+    var(Var),
+    !.
 map_variable_to_tuple((H, T), Map, (MH, MT)) :-
     !,
     map_variable_to_type(H, Map, MH),

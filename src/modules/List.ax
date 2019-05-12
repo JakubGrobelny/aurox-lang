@@ -1,0 +1,160 @@
+defop ... 1 none
+defop ++ 10 left
+
+define head xs : [a] -> Maybe a =
+    if is_empty xs
+        then Nothing
+        else Just $ __head xs
+    end
+end
+
+define tail xs : [a] -> Maybe [a] =
+    if is_empty xs
+        then Nothing
+        else Just $ __tail xs
+    end
+end
+
+define is_empty xs : [a] -> Bool =
+    __null xs
+end
+
+define (...) b e : Int -> Int -> [Int] =
+    match (b, e) with
+        case (a, a) => [a]
+        case _ => [b | b + 1 ... e ]
+    end
+end
+
+define map f xs : (a->b) -> [a] -> [b] =
+    match xs with
+        case [] => []
+        case [x | xs] => [f x | map f xs]
+    end
+end
+
+define foldr f n xs : (a -> b -> b) -> b -> [a] -> b =
+    match xs with
+        case [] => n
+        case [x | xs] => f x (foldr f n xs)
+    end
+end
+
+define foldl f n xs : (b -> a -> b) -> b -> [a] -> b =
+    match xs with
+        case [] => n
+        case [x | xs] => foldl f (f n x) xs
+    end
+end
+
+define filter p xs : (a -> Bool) -> [a] -> [a] =
+    match xs with
+        case [] => []
+        case [x | xs] => if p x 
+            then [x | filter p xs] 
+            else filter p xs 
+        end
+    end
+end
+
+define length xs : [a] -> Int =
+    match xs with
+        case [] => 0
+        case [_ | xs] => 1 + length xs
+    end
+end
+
+define reverse xs : [a] -> [a] =
+    let aux : ([a] -> [a] -> [a]) -> [a] -> [a] -> [a] =
+        { | f xs acc |
+            match xs with
+                case [] => acc
+                case [x | xs] => f xs [x | acc]
+            end
+        } in
+    fix aux xs []
+    end
+end
+
+define append xs ys : [a] -> [a] -> [a] =
+    match xs with
+        case [] => ys
+        case [x | xs] => [x | append xs ys]
+    end
+end 
+
+define (++) := append end
+
+define flatten xs : [[a]] -> [a] =
+    match xs with
+        case [] => []
+        case [xs | xss] => append xs (flatten xss)
+    end
+end
+
+define iter f xs : (a -> Unit) -> [a] -> Unit =
+    match xs with
+        case [] => ()
+        case [x | xs] => f x; iter f xs
+    end
+end 
+
+define zip xs ys : [a] -> [b] -> [a,b] =
+    match xs, ys with
+        case [], _ => []
+        case _, [] => []
+        case [x | xs], [y | ys] => [(x,y) | zip xs ys]
+    end
+end
+
+define forall xs p : [a] -> (a -> Bool) -> Bool =
+    match xs with
+        case [] => true
+        case [x | xs] => p x and forall xs p
+    end
+end 
+
+define exists xs p : [a] -> (a -> Bool) -> Bool =
+    match xs with
+        case [] => false
+        case [x | xs] => p x or exists xs p
+    end
+end
+
+define member x xs : a -> [a] -> Bool =
+    match xs with
+        case [] => false
+        case [y | ys] => y == x or member x ys
+    end
+end
+
+define find p xs : (a -> Bool) -> [a] -> Maybe a =
+    match xs with
+        case [] => Nothing
+        case [x | xs] => if p x
+            then Just x
+            else find p xs
+        end
+    end
+end
+
+define partition xs p : [a] -> (a -> Bool) -> ([a], [a]) =
+    match xs with
+        case [] => [], []
+        case [x | xs] => 
+            let rec := partition xs p in
+                let fst := first rec in
+                    let snd := second rec in
+                        if p x
+                            then [x | fst], snd
+                            else fst, [x | snd]
+                        end
+                    end
+                end 
+            end 
+        end 
+end
+
+define sort xs : [a] -> [a] =
+    __sort xs
+end

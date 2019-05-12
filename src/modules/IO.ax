@@ -9,3 +9,7 @@ end
 define read_float u : Unit -> Float =
     __read_float ()
 end
+
+define print_any : a -> Unit =
+    print . show
+end

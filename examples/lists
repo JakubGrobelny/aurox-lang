@@ -1,0 +1,23 @@
+import
+    IO
+    List
+end 
+
+# sort (0...100) |> print . show
+# forall [1,2,3,4] (`< 0) |> print . show
+# exists [1,2,3,4] (`== 5) |> print_any
+# member 30 [1,2,3] |> print_any
+# zip [1,2,3,4] "abcd" |> print . show 
+# iter (print . show) [1,2,3,4,5]
+# flatten [0...10, 11...20, 21...30] |> print . show
+# [1,2,3,4] ++ [5,6,7,8] |> print . show
+# reverse (0 ... 100) |> print . show
+map (`+ 10) (0 ... 1000) |> print . show
+# foldr `* 1 (1...6) |> print . show
+# foldl `+ 0 (1...6) |> print . show
+# partition [1,2,3,4,5,6] (`> 3) |> print . show
+# find (`== 4) [1,2,3,4,5,6] |> print . show
+# let n := read_int () in
+#     map (`+ 1) (0...n) |> print . show
+# end
+

@@ -55,10 +55,9 @@ preprocess_expr(unit, unit) :- !.
 preprocess_expr(wildcard, wildcard) :- !.
 preprocess_expr(id(Var), id(Var)) :- !.
 preprocess_expr(enum(Name), Name) :- !.
-preprocess_expr(adt(Name, Arg), Expr) :-
+preprocess_expr(adt(Name, Arg), Name/NewArg) :-
     !,
-    preprocess_expr(Arg, NewArg),
-    Expr =.. [Name, NewArg].
+    preprocess_expr(Arg, NewArg).
 preprocess_expr(Sequence, PreprocessedSequence) :-
     is_list(Sequence),
     !,
@@ -105,6 +104,9 @@ replace_pattern_vars(id(Var), Env, LogVar, Env) :-
     var(Val),
     !,
     LogVar = Val.
+replace_pattern_vars(Cons/Arg, Env, Cons/NewArg, NewEnv) :-
+    !,
+    replace_pattern_vars(Arg, Env, NewArg, NewEnv).
 replace_pattern_vars(wildcard, Env, _, Env) :- !.
 replace_pattern_vars(id(Var), Env, LogVar, NewEnv) :-
     put_dict(Var, Env, LogVar, NewEnv),
@@ -118,10 +120,5 @@ replace_pattern_vars((H, T), Env, (NH, NT), FinalEnv) :-
     !,
     replace_pattern_vars(H, Env, NH, NewEnv),
     replace_pattern_vars(T, NewEnv, NT, FinalEnv).
-replace_pattern_vars(ADT, Env, NewADT, NewEnv) :-
-    ADT =.. [Constructor, Arg],
-    !,
-    replace_pattern_vars(Arg, Env, NewArg, NewEnv),
-    NewADT =.. [Constructor, NewArg].
 replace_pattern_vars(X, Env, X, Env).
 

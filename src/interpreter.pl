@@ -1,13 +1,13 @@
 :- ensure_loaded(parser).
 :- ensure_loaded(typechecker).
 :- ensure_loaded(environment).
-:- ensure_loaded(pervasives).
+:- ensure_loaded(intrinsics).
 :- ensure_loaded(preprocessing).
 :- ensure_loaded(eval).
 
 interpret_program(EntryPoint) :-
     import_core_definitions(FreshEnv),
-    import_core_module(FreshEnv, NewEnv, Operators),
+    import_core_module(FreshEnv, NewEnv, Operators), 
     parse_file(EntryPoint, Operators, AST),
     process_definitions(AST, NewEnv, Program, FinalEnv),
     typecheck_environment(FinalEnv),
@@ -23,7 +23,7 @@ eval_env(Env, ['`types'-_ | Vars], NewEnv) :-
     eval_env(Env, Vars, NewEnv).
 eval_env(Env, [Var-_ | Vars], FinalEnv) :-
     eval(Env, id(Var), Val),
-    put_dict(Var, Env, val(Val), NewEnv),
+    put_dict(Var, Env, Val, NewEnv),
     eval_env(NewEnv, Vars, FinalEnv).
 
 run_program([], _, []) :- !.

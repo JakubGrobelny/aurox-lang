@@ -1,4 +1,22 @@
+# Tuples 
+
+define first t : (a, b) -> a =
+    match t with
+        case a, _ => a
+    end
+end
+
+define second t : (a, b) -> b =
+    match t with
+        case _, b => b
+    end
+end
+
 # Casts
+
+define char_code c : Char -> Int =
+    __char_code c
+end
 
 define int_of_float n : Int -> Float =
     __int_to_float n
@@ -10,17 +28,6 @@ end
 
 define show v : a -> String =
     __show v
-end
-
-# Lists
-
-defop ... 1 none
-
-define (...) b e :=
-    match (b, e) with
-        case (a, a) => [a]
-        case _ => [b | b + 1 ... e ]
-    end
 end
 
 # Typedefs
@@ -123,6 +130,10 @@ end
 
 define (|>) x f : a -> (a -> b) -> b =
     f x
+end
+
+define fix f x : ((a -> b) -> a -> b) -> a -> b =
+    f (fix f) x
 end
 
 # Comparisons
