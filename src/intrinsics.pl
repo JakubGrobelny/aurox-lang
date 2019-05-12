@@ -240,20 +240,22 @@ import_core_definitions(CoreEnv) :-
 
 '__print'(Chars, unit) :-
     atomic_list_concat(Chars, Str),
-    format(Str).
+    current_output(Out),
+    format(Str),
+    flush_output(Out).
 
 '__read_int'(_, Int) :-
-    read(Int),
-    integer(Int),
-    % io:read_int(Int),
+    % read(Int),
+    % integer(Int),
+    io:read_int(Int),
     !.
 '__read_int'(_, _) :-
     throw(runtime_error('read_int: invalid input')).
 
 '__read_float'(_, Float) :-
-    read(Float),
-    float(Float),/*  */
-    % io:read_float(Float),
+    % read(Float),
+    % float(Float),/*  */
+    io:read_float(Float),
     !.
 '__read_float'(_, _) :-
     throw(runtime_error('read_int: invalid input')).

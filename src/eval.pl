@@ -1,8 +1,5 @@
 :- ensure_loaded(utility).
 
-eval(_, Val, Val) :-
-    atomic(Val),
-    !.
 eval(_-Xs, id(Var), Val) :-
     member(Var:Val, Xs),
     !.
@@ -17,10 +14,10 @@ eval(Env, id(Var), Res) :-
     !,
     get_dict(Var, Env, Val),
     eval(Env, Val, Res).
+eval(_, Val, Val) :-
+    atomic(Val),
+    !.
 eval(_, bfun(Fun), bfun(Fun)) :- !.
-eval(Env, Cons/Arg, Cons/ArgVal) :-
-    !,
-    eval(Env, Arg, ArgVal).
 eval(Env, app(F, Arg), Res) :-
     eval(Env, F, bfun(Fun)),
     !,
@@ -36,6 +33,10 @@ eval(Env, pmatch(Expr, Cases), Res) :-
     !,
     eval(Env, Expr, ExprVal),
     eval_pattern_matching(Env, ExprVal, Cases, Res).
+eval(_, closure(Param, Env, Expr), closure(Param, Env, Expr)) :- !.
+eval(Env, Cons/Arg, Cons/ArgVal) :-
+    !,
+    eval(Env, Arg, ArgVal).
 eval(Env, if(Cond, Cons, _), Res) :-
     eval(Env, Cond, true),
     !,
@@ -89,17 +90,3 @@ eval_pattern_matching(Env, Val, [case(Predicate, Expr) | _], Res) :-
     eval(Env-Substitutions, Expr, Res).
 eval_pattern_matching(Env, Val, [_ | Ps], Res) :-
     eval_pattern_matching(Env, Val, Ps, Res).
-
-% eval_pattern_matching(Env, Val, [case(Pattern, LocEnv, Expr) | _], Res) :-
-%     (\+ dict_empty(LocEnv); var(Pattern)),
-%     copy_term((Pattern, LocEnv), (PatternCopy, LocEnvCopy)),
-%     Val = PatternCopy,
-%     !,
-%     eval(Env-LocEnvCopy, Expr, Res).
-% eval_pattern_matching(Env, Val, [case(Pattern, locenv{}, Expr) | _], Res) :-
-%     \+ var(Pattern),
-%     Val = Pattern,
-%     !,
-%     eval(Env, Expr, Res).
-% eval_pattern_matching(Env, Val, [_ | Rest], Res) :-
-%     eval_pattern_matching(Env, Val, Rest, Res).
