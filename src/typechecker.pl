@@ -141,10 +141,11 @@ infer_type(Env, let(id(Var), Type, Val at VPos, Expr at EPos), T, Pos) :-
     infer_type(NewEnv, Expr, ExprT, EPos),
     typecheck_let_def(T, ExprT, Pos).
 infer_type(Env, lambda(Arg, Expr), T, Pos) :-
-    construct_lambda_type(Arg, LambdaType, Variables, Pos, ReturnType),
+    construct_lambda_type(Arg, _, Variables, Pos, ReturnType),
     put_dict(Variables, Env, IntermediateEnv),
     infer_type(IntermediateEnv, Expr, ReturnType, Pos),
-    typecheck_function_type(T, LambdaType, Pos).
+    get_dict(Arg, IntermediateEnv, (_, ArgType, _)),
+    typecheck_function_type(T, (ArgType->ReturnType), Pos).
 infer_type(_, wildcard, _, _) :- !.
 infer_type(Env, adt(Cons, Arg), TCopy, Pos) :-
     infer_type(Env, Arg, ArgType, Pos),
@@ -343,6 +344,7 @@ prettify_type(X, Code, NewCode, Atom) :-
     var(X),
     !,
     char_code(Atom, Code),
+    X = Atom,
     NewCode is Code + 1.
 prettify_type(adt(Name, Params), Code, NewCode, Atom) :-
     !,

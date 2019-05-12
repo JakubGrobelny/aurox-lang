@@ -62,6 +62,8 @@ not_unique_list_helper([X, X | _], X) :- !.
 not_unique_list_helper([_ | Xs], X)  :-
     not_unique_list_helper(Xs, X).
 
+prettify_expr(Cons/Arg, Cons/PArg) :-
+    prettify_expr(Arg, PArg).
 prettify_expr(closure(Arg, _, _), fun(ArgP)) :-
     !,
     prettify_expr(Arg, ArgP).
