@@ -182,3 +182,26 @@ end
 define fix f x : ((a -> b) -> a -> b) -> a -> b =
     f (fix f) x
 end
+
+define absurd x : Void -> a =
+    match x with end
+end
+
+define id a : a -> a =
+    a
+end 
+
+define const a b : a -> b -> a =
+    a
+end
+
+define seq a b : a -> b -> b =
+    b
+end
+
+define until p f a : (a -> Bool) -> (a -> a) -> a -> a =
+    if not (p a)
+        then until p f $ f a
+        else a
+    end
+end

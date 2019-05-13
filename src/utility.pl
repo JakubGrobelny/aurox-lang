@@ -74,7 +74,7 @@ prettify_expr((H, T), (H0, T0)) :-
     !,
     prettify_expr(H, H0),
     prettify_expr(T, T0).
-prettify_expr(closure(Arg, _, _), fun(ArgP)) :-
+prettify_expr(closure(Arg, _, _), 'λ'(ArgP)) :-
     !,
     prettify_expr(Arg, ArgP).
 prettify_expr(X, X).

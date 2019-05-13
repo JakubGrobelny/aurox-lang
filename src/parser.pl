@@ -759,8 +759,15 @@ list_pattern_tail(list([])) -->
     !.
 list_pattern_tail(list(Tail)) -->
     [op('|') at _],
+    list_pattern_valid_tail(Tail),
+    [']' at _].
+
+list_pattern_valid_tail(Tail) -->
     valid_variable_name(Tail),
-    [']' at _].    
+    !.
+list_pattern_valid_tail(Tail) -->
+    ['[' at _],
+    list_pattern(Tail).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                   %

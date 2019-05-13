@@ -24,16 +24,19 @@ typecheck_environment([('`types'-_) | Tail], Env) :-
 typecheck_environment([_-(_, _, builtin) | Tail], Env) :-
     !,
     typecheck_environment(Tail, Env).
-typecheck_environment([Var-(Val at Pos, TSig, _) | Vars], Env) :-
+typecheck_environment([_-(Val at Pos, TSig, _) | Vars], Env) :-
     get_dict('`types', Env, Types),
     check_if_types_defined(Types, TSig, Pos),
+    infer_type(Env, Val, Type, Pos),
+    \+ cyclic_term(Type),
+    TSig = Type,
     % fix_type_signature(TSig, Type),
-    infer_type(Env, Val, TSig, Pos),
     !,
     % \+ var(Type),
     typecheck_environment(Vars, Env).
 typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     infer_type(Env, Val, ValType, Pos),
+    \+ cyclic_term(ValType),
     \+ var(ValType),
     !,
     print_type_error(
@@ -144,9 +147,10 @@ infer_type(Env, lambda(Arg, Expr), T, Pos) :-
     put_dict(Variables, Env, IntermediateEnv),
     infer_type(IntermediateEnv, Expr, ReturnType, Pos),
     get_dict(Arg, IntermediateEnv, (_, ArgType, _)),
-    typecheck_function_type(T, (ArgType->ReturnType), Pos).
+    typecheck_function_type((ArgType->ReturnType), T, Pos).
 infer_type(_, wildcard, _, _) :- !.
 infer_type(Env, adt(Cons, Arg), TCopy, Pos) :-
+    %TODO: check if constructor is valid
     infer_type(Env, Arg, ArgType, Pos),
     get_dict(Cons, Env, (_, (A->T), _)),
     copy_term((A->T), (ACopy->TCopy)),
@@ -269,6 +273,7 @@ typecheck_list(Env, ExpectedType, Tail, Pos) :-
     infer_type(Env, Tail, list(ExpectedType), Pos),
     !.
 typecheck_list(Env, ExpectedType, [H | _], Pos) :-
+    !,
     infer_type(Env, H, HType, Pos),
     print_type_error(
         Pos,

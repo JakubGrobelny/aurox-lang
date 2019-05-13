@@ -1,35 +1,69 @@
 import 
-    Monad
+    Monads
 end
 
-type Range a with
+defop !++ 10 left
+
+type Stream a with
     case LNull
-    case LCons (a, (Unit -> Range a))
+    case LCons (a, (Unit -> Stream a))
 end
 
-define range x f : a-> (a -> a) -> Range a =
-    LCons (x, {|u| range (f x) f})
+define make_stream x f : a-> (a -> a) -> Stream a =
+    LCons (x, {|u| make_stream (f x) f})
 end
 
-define range_head r : Range a -> Maybe a =
+define stream_head r : Stream a -> Maybe a =
     match r with
         case LNull => Nothing
         case LCons (a, _) => Just a
     end
 end
 
-define range_tail r : Range a -> Maybe (Range a) =
+define stream_tail r : Stream a -> Maybe (Stream a) =
     match r with
         case LNull => Nothing
         case LCons (_, t) => Just $ t ()
     end
 end
 
-define range_take r n : Range a -> Int -> Maybe [a] =
+define stream_take r n : Stream a -> Int -> Maybe [a] =
     match (r, n) with
         case _, 0 => maybe_return []
         case LNull, _ => Nothing
         case LCons (a, tl), n => 
-            range_take (tl ()) (n-1) >>= { | xs | Just [a | xs] }
+            stream_take (tl ()) (n-1) >>= { | xs | Just [a | xs] }
     end 
 end
+
+define stream_append xs ys : Stream a -> Stream a -> Stream a =
+    match xs with
+        case LNull => ys
+        case LCons (hd, tl) => LCons (hd, {|u| stream_append (tl ()) ys})
+    end
+end
+
+define stream_zip xs ys : Stream a -> Stream b -> Stream (a,b) =
+    match xs,ys with
+        case LNull, _ => LNull
+        case _, LNull => LNull
+        case LCons(xhd, xtl), LCons(yhd, ytl) =>
+            LCons ((xhd, yhd), {|u| stream_zip (xtl ()) $ ytl ()})
+    end
+end
+
+define stream_empty? xs : Stream a -> Bool =
+    match xs with
+        case LNull => true
+        case _ => false
+    end
+end
+
+define stream_drop xs n : Stream a -> Int -> Maybe (Stream a) =
+    match xs, n with
+        case _, 0 => Just xs
+        case LNull, _ => Nothing
+        case LCons (_, tl), _ => stream_drop (tl ()) $ n - 1
+    end
+end
+

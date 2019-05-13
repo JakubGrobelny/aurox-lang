@@ -2,20 +2,20 @@ defop ... 1 none
 defop ++ 10 left
 
 define head xs : [a] -> Maybe a =
-    if is_empty xs
+    if empty? xs
         then Nothing
         else Just $ __head xs
     end
 end
 
 define tail xs : [a] -> Maybe [a] =
-    if is_empty xs
+    if empty? xs
         then Nothing
         else Just $ __tail xs
     end
 end
 
-define is_empty xs : [a] -> Bool =
+define empty? xs : [a] -> Bool =
     __null xs
 end
 
@@ -47,12 +47,12 @@ define foldl f n xs : (b -> a -> b) -> b -> [a] -> b =
     end
 end
 
-define filter p xs : (a -> Bool) -> [a] -> [a] =
+define filter p? xs : (a -> Bool) -> [a] -> [a] =
     match xs with
         case [] => []
-        case [x | xs] => if p x 
-            then [x | filter p xs] 
-            else filter p xs 
+        case [x | xs] => if p? x 
+            then [x | filter p? xs] 
+            else filter p? xs 
         end
     end
 end
@@ -107,10 +107,10 @@ define zip xs ys : [a] -> [b] -> [a,b] =
     end
 end
 
-define forall xs p : [a] -> (a -> Bool) -> Bool =
+define forall xs p? : [a] -> (a -> Bool) -> Bool =
     match xs with
         case [] => true
-        case [x | xs] => p x and forall xs p
+        case [x | xs] => p? x and forall xs p?
     end
 end 
 
@@ -128,24 +128,24 @@ define member x xs : a -> [a] -> Bool =
     end
 end
 
-define find p xs : (a -> Bool) -> [a] -> Maybe a =
+define find p? xs : (a -> Bool) -> [a] -> Maybe a =
     match xs with
         case [] => Nothing
-        case [x | xs] => if p x
+        case [x | xs] => if p? x
             then Just x
-            else find p xs
+            else find p? xs
         end
     end
 end
 
-define partition xs p : [a] -> (a -> Bool) -> ([a], [a]) =
+define partition xs p? : [a] -> (a -> Bool) -> ([a], [a]) =
     match xs with
         case [] => [], []
         case [x | xs] => 
-            let rec := partition xs p in
+            let rec := partition xs p? in
                 let fst := first rec in
                     let snd := second rec in
-                        if p x
+                        if p? x
                             then [x | fst], snd
                             else fst, [x | snd]
                         end
@@ -158,3 +158,40 @@ end
 define sort xs : [a] -> [a] =
     __sort xs
 end
+
+define nth xs n : [a] -> Int -> Maybe a =
+    match xs, n with
+        case [], _ => Nothing
+        case [x | _], 0 => Just x
+        case [_ | xs], n => nth xs $ n - 1
+    end
+end
+
+define init xs : [a] -> Maybe [a] =
+    match xs with
+        case [] => Nothing
+        case [_] => Just []
+        case [x | xs] => match init xs with
+            case Nothing => Nothing
+            case Just xs => Just [x | xs]
+        end
+    end
+end
+
+define last xs : [a] -> Maybe a =
+    match xs with
+        case [] => Nothing
+        case [a] => Just a
+        case [_ | xs] => last xs
+    end
+end
+
+define zip_with xs f : [a, b] -> (a -> b -> c) -> [c] =
+    match xs with
+        case [] => []
+        case [(a,b) | xs] => [f a b | zip_with xs f]
+    end
+end
+
+
+

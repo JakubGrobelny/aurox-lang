@@ -1,0 +1,47 @@
+type Dict k v with
+    case DictLeaf
+    case DictNode (Dict k v, (k, v), Dict k v)
+end
+
+define make_dict kvs : [(k,v)] -> Dict k v =
+    match kvs with
+        case [] => DictLeaf
+        case [(k,v) | kvs] => dict_insert k v $ make_dict kvs
+    end
+end
+
+define dict_insert k v d : k -> v -> Dict k v -> Dict k v =
+    match d with
+        case DictLeaf => DictNode (DictLeaf, (k, v), DictLeaf)
+        case DictNode (l, (key, val), r) => if k <= key
+            then DictNode (dict_insert k v l, (key, val), r)
+            else DictNode (l, (key, val), dict_insert k v l)
+        end
+    end
+end
+
+define dict_get k d : k -> Dict k v -> Maybe v =
+    match d with
+        case DictLeaf => Nothing
+        case DictNode (l, (key, val), r) => if key == k
+            then Just val
+            else if k <= key
+                then dict_get k l
+                else dict_get k r
+            end
+        end 
+    end
+end
+
+define dict_replace k v d : k -> v -> Dict k v -> Maybe (Dict k v) =
+    match d with
+        case DictLeaf => Nothing
+        case DictNode (l, (key, val), r) => if key == k
+            then Just $ DictNode (l, (k, v), r)
+            else if k <= key
+                then dict_replace k v l
+                else dict_replace k v r
+            end 
+        end 
+    end
+end

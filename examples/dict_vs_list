@@ -1,0 +1,17 @@
+import
+    Dict
+    List
+    IO
+end
+
+define dict :=
+    zip ((0...99)++(200...299)++(100...199)++(500...549)++(300...349))
+        (0...399)
+    |> make_dict
+end
+
+define list := 0...399 end
+
+dict_get 340 dict |> print . show;
+nth list 340 |> print . show
+

@@ -1,3 +1,7 @@
+import
+    List
+end
+
 # Maybe monad
 
 defop >>= 10 left
@@ -17,16 +21,12 @@ define (>>=) := maybe_bind end
 
 # List monad
 
-import
-    List
-end
-
 defop >=> 10 left
 
 define list_bind xs f : [a] -> (a -> [b]) -> [b] =
     match xs with
         case [] => []
-        case [x | xs] => [f x | flatten $ list_bind xs f]
+        case [x | xs] => list_bind xs f |> append $ f x
     end
 end
 
@@ -37,11 +37,18 @@ end
 define (>=>) := list_bind end
 
 
+# Either monads
 
+defop =>> 10 left
 
+define either_bind e f : Either a b -> (b -> Either a c) -> Either a c =
+    match e with
+        case Left a => Left a
+        case Right a => f a
+    end
+end
 
-
-
-
-
+define either_return : a -> Either b a =
+    Right
+end 
 
