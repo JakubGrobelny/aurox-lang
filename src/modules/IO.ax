@@ -10,17 +10,11 @@ define read_float u : Unit -> Maybe Float =
     __read_float ()
 end
 
-# TODO:
-
-define read_word u : Unit -> String =
+define read_line u : Unit -> Maybe String =
     __read_string ()
 end
 
-define read_line u : Unit -> String =
-    __read_line ()
-end
-
-define read_char u : Unit -> String =
+define read_char u : Unit -> Char =
     __read_char ()
 end
 

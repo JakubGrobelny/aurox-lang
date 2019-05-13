@@ -85,6 +85,40 @@ type Either a b with
     case Right b
 end
 
+# Maybe monad
+
+defop >>= 10 left
+
+define maybe_bind m f : Maybe a -> (a -> Maybe b) -> Maybe b =
+    match m with
+        case Nothing => Nothing
+        case Just a => f a
+    end
+end
+
+define maybe_return a : a -> Maybe a =
+    Just a
+end
+
+define (>>=) := maybe_bind end
+
+# Either monad
+
+defop =>> 10 left
+
+define either_bind e f : Either a b -> (b -> Either a c) -> Either a c =
+    match e with
+        case Left a => Left a
+        case Right a => f a
+    end
+end
+
+define either_return : a -> Either b a =
+    Right
+end 
+
+define (=>>) := either_bind end
+
 # Integer arithmetic
 
 defop -  10 left

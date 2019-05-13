@@ -1,6 +1,0 @@
-import
-    "import1.ax"
-    IO
-end
-
-5! |> show |> print

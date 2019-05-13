@@ -1,8 +1,0 @@
-defop ! 20 postfix
-
-define (!) n :=
-    if n == 0
-        then 1
-        else n * (n-1)!
-    end
-end

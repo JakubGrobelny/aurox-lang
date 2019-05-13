@@ -1,6 +1,24 @@
 defop ... 1 none
 defop ++ 10 left
 
+
+# List monad
+
+defop >=> 10 left
+
+define list_bind xs f : [a] -> (a -> [b]) -> [b] =
+    match xs with
+        case [] => []
+        case [x | xs] => append (f x) (list_bind xs f)
+    end
+end
+
+define list_return a : a -> [a] =
+    [a]
+end
+
+define (>=>) := list_bind end
+
 define head xs : [a] -> Maybe a =
     if empty? xs
         then Nothing
@@ -193,5 +211,9 @@ define zip_with xs f : [a, b] -> (a -> b -> c) -> [c] =
     end
 end
 
-
-
+define repeat x n : a -> Int -> [a] =
+    match n with
+        case 0 => []
+        case _ => [x | repeat x (n - 1)]
+    end
+end

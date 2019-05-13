@@ -168,6 +168,16 @@ import_core_definitions(CoreEnv) :-
                 bfun('__exit') at builtin,
                 (adt('Int', [])->adt('Unit', [])),
                 builtin
+            ),
+            '__read_string':(
+                bfun('__read_string') at bultin,
+                (adt('Unit', [])->adt('Maybe', [list(adt('Char', []))])),
+                builtin
+            ),
+            '__read_char':(
+                bfun('__read_char') at bultin,
+                (adt('Unit', [])->adt('Char', [])),
+                builtin
             )
         ]
     ).
@@ -249,14 +259,14 @@ import_core_definitions(CoreEnv) :-
     format(Str),
     flush_output(Out).
 
-'__read_int'(_, 'Just'(Int)) :-
+'__read_int'(_, 'Just'/Int) :-
     % read(Int),
     % integer(Int),
     io:read_int(Int),
     !.
 '__read_int'(_, 'Nothing').
 
-'__read_float'(_, 'Just'(Float)) :-
+'__read_float'(_, 'Just'/Float) :-
     % read(Float),
     % float(Float),/*  */
     io:read_float(Float),
@@ -282,3 +292,13 @@ import_core_definitions(CoreEnv) :-
 
 '__exit'(Code, unit) :-
     halt(Code).
+
+'__read_string'(_, 'Just'/CharList) :-
+    io:read_string(Str),
+    !,
+    atom_chars(Str, CharList).
+'__read_string'(_, 'Nothing').
+
+'__read_char'(_, C) :-
+    io:read_char(C).
+

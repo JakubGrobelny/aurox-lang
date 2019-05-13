@@ -1,15 +1,25 @@
 import
-    "import1.ax"
+    List
     IO
+end
+
+defop ! 20 postfix
+
+define (!) n :=
+    if n == 0
+        then 1
+        else n * (n-1)!
+    end
 end
 
 define main u :=
     print "Enter a number: ";
     let n := read_int () in
-        print "The factorial of ";
-        print $ show n;
-        print " is ";
-        print $ show $ n!
+        match n with
+            case Nothing => print "Failed to read the number!\n"
+            case Just n => 
+                print $ "Factorial of " ++ show n ++ " is " ++ show (n!) ++ "\n"
+        end
     end
 end
 

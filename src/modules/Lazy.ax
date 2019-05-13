@@ -1,7 +1,3 @@
-import 
-    Monads
-end
-
 defop !++ 10 left
 
 type Stream a with
@@ -31,8 +27,10 @@ define stream_take r n : Stream a -> Int -> Maybe [a] =
     match (r, n) with
         case _, 0 => maybe_return []
         case LNull, _ => Nothing
-        case LCons (a, tl), n => 
-            stream_take (tl ()) (n-1) >>= { | xs | Just [a | xs] }
+        case LCons (a, tl), n => match stream_take (tl ()) (n-1) with
+            case Nothing => Nothing
+            case Just xs => Just [a | xs]
+        end 
     end 
 end
 

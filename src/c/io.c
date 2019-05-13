@@ -41,9 +41,35 @@ static foreign_t pl_printf(term_t in)
     PL_exception;
 }
 
+static foreign_t pl_read_string(term_t to)
+{
+    if (PL_is_variable(to))
+    {
+        char buf[1024];
+
+        if (!fgets(buf, sizeof(buf), stdin))
+            PL_fail;
+
+        return PL_unify_string_chars(to, buf);
+    }
+
+    PL_fail;
+}
+
+static foreign_t pl_read_char(term_t to)
+{
+    char buf[2] = {'\0', '\0'};
+
+    buf[0] = getchar();
+
+    return PL_unify_string_chars(to, buf);
+}
+
 install_t install_io()
 { 
     PL_register_foreign("read_int", 1, pl_read_int, 0);
     PL_register_foreign("read_float", 1, pl_read_float, 0);
     PL_register_foreign("printf", 1, pl_printf, 0);
+    PL_register_foreign("read_char", 1, pl_read_char, 0);
+    PL_register_foreign("read_string", 1, pl_read_string, 0);
 }
