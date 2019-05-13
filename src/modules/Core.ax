@@ -37,7 +37,7 @@ end
 
 # System
 
-define exit u : Unit -> Unit =
+define exit u : Int -> Unit =
     __exit u
 end
 

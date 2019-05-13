@@ -26,7 +26,7 @@ defop >=> 10 left
 define list_bind xs f : [a] -> (a -> [b]) -> [b] =
     match xs with
         case [] => []
-        case [x | xs] => list_bind xs f |> append $ f x
+        case [x | xs] => append (f x) (list_bind xs f)
     end
 end
 
@@ -52,3 +52,4 @@ define either_return : a -> Either b a =
     Right
 end 
 
+define (=>>) := either_bind end

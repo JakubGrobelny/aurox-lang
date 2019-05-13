@@ -3,7 +3,8 @@
 
 typecheck_program(_, []) :- !.
 typecheck_program(Env, [Expr at Pos | Exprs]) :-
-    infer_type(Env, Expr, _, Pos),
+    infer_type(Env, Expr, Type, Pos),
+    \+ cyclic_term(Type),
     !,
     typecheck_program(Env, Exprs).
 typecheck_program(_, [_ at Pos | _]) :-

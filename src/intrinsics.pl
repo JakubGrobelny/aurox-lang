@@ -166,7 +166,7 @@ import_core_definitions(CoreEnv) :-
             ),
             '__exit':(
                 bfun('__exit') at builtin,
-                (adt('Unit', [])->adt('Unit', [])),
+                (adt('Int', [])->adt('Unit', [])),
                 builtin
             )
         ]
@@ -280,5 +280,5 @@ import_core_definitions(CoreEnv) :-
 '__char_code'(C, Code) :-
     char_code(C, Code).
 
-'__exit'(_, unit) :-
-    halt.
+'__exit'(Code, unit) :-
+    halt(Code).
