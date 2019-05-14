@@ -193,7 +193,16 @@ typcheck_pmatching(Env, [case(P, E at CPos)| Ps], ExpectedType, T, Pos) :-
     pattern_type_matches(ExpectedType, PT, CPos),
     infer_type(NewEnv, E, ET, CPos),
     typecheck_pmatching_exprs(T, ET, CPos),
+    \+ cyclic_term(PT),
+    \+ cyclic_term(ET),
+    !,
     typcheck_pmatching(Env, Ps, ExpectedType, T, Pos).
+typecheck_pmatching(_, [case(_, _ at CPos) | _], _, _, _) :-
+    print_error_and_halt(
+        CPos,
+        'Type mismatch in pattern',
+        []
+    ).
 
 extract_pattern_variables(wildcard, Map, Map, _) :- !.
 extract_pattern_variables(id(A), Map, NewMap, Pos) :-

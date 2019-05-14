@@ -5,8 +5,15 @@ type Stream a with
     case LCons (a, (Unit -> Stream a))
 end
 
-define make_stream x f : a-> (a -> a) -> Stream a =
-    LCons (x, {|u| make_stream (f x) f})
+define make_stream x f : a -> (a -> a) -> Stream a =
+    LCons (x, { |u| make_stream (f x) f})
+end
+
+define make_range x f p? : a -> (a -> a) -> (a -> Bool) -> Stream a =
+    if not (p? x)
+        then LNull
+        else LCons (x, { |u| make_range (f x) f p? })
+    end
 end
 
 define stream_head r : Stream a -> Maybe a =
@@ -65,3 +72,17 @@ define stream_drop xs n : Stream a -> Int -> Maybe (Stream a) =
     end
 end
 
+defop >>> 10 left
+
+define stream_bind s f : Stream a -> (a -> Stream b) -> Stream b =
+    match s with
+        case LNull => LNull
+        case LCons (hd, tl) => stream_append (f hd) $ stream_bind (tl ()) f
+    end
+end
+
+define (>>>) := stream_bind end
+
+define stream_return x : a -> Stream a =
+    LCons (x, { |u| LNull })
+end
