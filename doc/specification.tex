@@ -1,0 +1,132 @@
+\documentclass[12pt]{article}
+\usepackage[polish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{syntax}
+
+\setlength{\grammarindent}{5em}
+
+\title{\huge
+    \textbf{Aurox language specification}}
+\author{\Large Jakub Grobelny}
+
+\begin{document}
+
+\maketitle
+
+\section{Syntax}
+
+Character classification:
+\begin{itemize}
+    \item <\textit{whitespace}> --- HT, LF, CR, SPACE
+    \item <\textit{digit}> --- 0-9
+    \item <\textit{lowercase}> --- underscore or any other lowercase Unicode 
+        characters \footnote{
+            All characters \texttt{X} which satisfy 
+            \texttt{char\textunderscore type(X, lower) predicate in SWI Prolog}
+            }
+    \item <\textit{uppercase}> --- any uppercase Unicode characters \footnote{
+        All characters \texttt{X} which satisfy
+        \texttt{char\textunderscore type(X, upper) predicate in SWI Prolog}
+        }
+    \item <\textit{special}> --- '-', '+', '*', '/', '=', '>', '<', '.', '!', '@', '\%', '\^', '~', '\&', '\$', '|'
+\end{itemize}
+
+Any character sequence beginning with character \texttt{\#} ending with LF are 
+\textit{comments}.
+
+\begin{grammar}
+
+<operator> ::= <special>
+    \alt <special> <operator>
+
+<keyword> ::= \textbf{let} | \textbf{in} | \textbf{if} | \textbf{and} 
+    | \textbf{or} | \textbf{then}
+    \alt \textbf{match} | \textbf{else} | \textbf{with} | \textbf{type} 
+    | \textbf{import} \alt \textbf{define} | \textbf{_} | \textbf{defop} 
+    | \textbf{end} | \textbf{case}
+
+<identifier> ::= <lowercase> <alphanum>
+
+<type identifier> ::= <uppercase> <alphanum>
+
+<alphanum> ::= <alphanum char> <alphanum> | $\epsilon$
+
+<alphanum char> ::= <lowercase> | \textbf{?} | <digit>
+
+<integer> ::= <digit> | <digit> <integer>
+
+<float> ::= <integer> . <digit sequence> <exponent> \textbf{e}
+    \alt <integer> <expontent>
+
+<digit sequence> ::= <digit> | <digit> <digit sequence>
+
+<e> ::= \textbf{e} | \textbf{E}
+
+<exponent> ::= <e> \textbf{-} <integer>
+    \alt <e> <integer>
+
+<string> ::= \textbf{\"} <char sequence> \textbf{\"} | \textbf{\"}\textbf{\"}
+
+<char> ::= \textbf{\'} <character> \textbf{\'}
+
+<char sequence> ::= <character> | <character> <char sequence>
+
+<character> ::= Unicode
+    | \textbf{\textbackslash\textbackslash}
+    | \textbf{\textbackslash b}
+    | \textbf{\textbackslash n}
+    | \textbf{\textbackslash f}
+    | \textbf{\textbackslash a}
+    | \textbf{\textbackslash r}
+    | \textbf{\textbackslash t}
+    | \textbf{\textbackslash 0}
+    | \textbf{\textbackslash \"}
+    | \textbf{\textbackslash \'}
+
+<operator declaration> ::= \textbf{defop} <operator> <integer> <associativity>
+
+<associativity> ::= \textbf{left} | \textbf{right} 
+    | \textbf{none} | \textbf{prefix} | \textbf{postfix}
+
+<import> ::= \textbf{import} <import list> \textbf{end}
+
+<import list> ::= $\epsilon$ | <string> <import list>
+    \alt <type name> <import list>
+
+<definition> ::= \textbf{define} <function name> <formal parameters> 
+    \textbf{:} <type> \textbf{=} \textbf{end}
+
+<function name> ::= <identifier> | \textbf{(} <operator> \textbf{)}
+
+<formal parameters> ::= <variable name> <formal parameters> |  $\epsilon$
+
+<variable name> ::= <identifier> | \textbf{_}
+
+<type> ::= <function type> \alt <function type> \textbf{,} <tupe>
+
+<function type> ::= <algebraic data type>
+    \alt <function type> \textbf(->) <algebraic data type> 
+
+<algebraic data type> ::= <type name> <atomic type sequence>
+    \alt <atomic type>
+
+<atomic type sequence> ::= <atomic type> <atomic type sequence> | $\epsilon$
+
+<atomic type> ::= <identifier> | <type name>
+    \alt \textbf{[} <type> \textbf{]} | \textbf{(} <type> \textbf{)}
+
+<type definition> ::= \textbf{type} <type name> <formal parameters> \textbf{with}\\
+    <type constructors> \textbf{end}
+
+<type constructors> 
+
+\end{grammar}
+
+\section{Semantics}
+
+\section{Type system}
+
+\end{document}
+
+
