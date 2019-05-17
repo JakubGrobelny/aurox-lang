@@ -61,11 +61,11 @@ define char_code c : Char -> Int =
     __char_code c
 end
 
-define int_of_float n : Int -> Float =
+define float_of_int n : Int -> Float =
     __int_to_float n
 end
 
-define float_of_int x : Float -> Int =
+define int_of_float x : Float -> Int =
     __float_to_int x
 end
 

@@ -1,0 +1,35 @@
+import
+    Lazy
+    List
+end
+
+define fibs : Stream Int =
+    LCons (1, { 
+        |u| 
+        LCons (1, { 
+            |q|
+            stream_zip_with 
+                fibs 
+                (match stream_tail fibs with 
+                    case Nothing => LNull
+                    case Just tl => tl
+                end)
+                `+
+        })
+    })
+end
+
+define fact n : Int -> Int =
+    if n == 0
+        then 1
+        else n * fact (n-1)
+    end
+end
+
+define rfact n : Int -> Int =
+    foldr `* 1 (1...n) 
+end
+
+define lfact n : Int -> Int =
+    foldl `* 1 (1...n) 
+end

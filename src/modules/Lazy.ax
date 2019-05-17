@@ -1,4 +1,6 @@
-defop !++ 10 left
+defop >++ 10 left
+defop --> 1 none
+defop .. 20 postfix
 
 type Stream a with
     case LNull
@@ -9,10 +11,17 @@ define make_stream x f : a -> (a -> a) -> Stream a =
     LCons (x, { |u| make_stream (f x) f})
 end
 
-define make_range x f p? : a -> (a -> a) -> (a -> Bool) -> Stream a =
+define make_limited_stream x f p? : a -> (a -> a) -> (a -> Bool) -> Stream a =
     if not (p? x)
         then LNull
-        else LCons (x, { |u| make_range (f x) f p? })
+        else LCons (x, { |u| make_limited_stream (f x) f p? })  
+    end
+end
+
+define (-->) b e : Int -> Int -> Stream Int =
+    if b > e
+        then LNull
+        else LCons (b, { |u| b + 1 --> e } )
     end
 end
 
@@ -48,12 +57,24 @@ define stream_append xs ys : Stream a -> Stream a -> Stream a =
     end
 end
 
+define (>++) := stream_append end
+
 define stream_zip xs ys : Stream a -> Stream b -> Stream (a,b) =
     match xs,ys with
         case LNull, _ => LNull
         case _, LNull => LNull
         case LCons(xhd, xtl), LCons(yhd, ytl) =>
             LCons ((xhd, yhd), {|u| stream_zip (xtl ()) $ ytl ()})
+    end
+end
+
+define stream_zip_with xs ys  f
+    : Stream a -> Stream b ->  (a -> b -> c) -> Stream c =
+    match xs, ys with
+        case LNull, _ => LNull
+        case _, LNull => LNull
+        case LCons(xhd, xtl), LCons(yhd, ytl) =>
+            LCons (f xhd yhd, { |u| stream_zip_with (xtl ()) (ytl ()) f })
     end
 end
 
@@ -68,7 +89,7 @@ define stream_drop xs n : Stream a -> Int -> Maybe (Stream a) =
     match xs, n with
         case _, 0 => Just xs
         case LNull, _ => Nothing
-        case LCons (_, tl), _ => stream_drop (tl ()) $ n - 1
+        case LCons (_, tl), _ => stream_drop (tl ()) (n - 1)
     end
 end
 
@@ -86,3 +107,22 @@ define (>>>) := stream_bind end
 define stream_return x : a -> Stream a =
     LCons (x, { |u| LNull })
 end
+
+define (..) n : Int -> Stream Int =
+    LCons (n, { |u| (n+1).. })
+end
+
+define stream_map f xs : (a -> b) -> Stream a -> Stream b =
+    match xs with
+        case LNull => LNull
+        case LCons (x, xs) => LCons (f x, { |u| stream_map f (xs ())})
+    end
+end
+
+
+
+
+
+
+
+
