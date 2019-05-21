@@ -192,8 +192,8 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 <expression prefix 20> ::= <operator prefix 20> <application>
     \alt <application>
 
-<expression prefix N> ::= <operator prefix N> <expression none (N-1)>
-    \alt <expression none (N-1)>
+<expression prefix N> ::= <operator prefix N> <expression none (N+1)>
+    \alt <expression none (N+1)>
 
 <application> ::= <atomic expression> <application>
     \alt <atomic expression>
