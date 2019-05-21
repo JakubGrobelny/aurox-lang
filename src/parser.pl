@@ -589,7 +589,7 @@ list_expression_tail(Start, list([]), _) -->
     expected_token(Start, ']', 'closing square bracket', _).
 
 list_element(_, Elem, Operators) -->
-    expr_n(0, Elem, Operators),
+    expr_logical_or(Elem, Operators),
     !.
 list_element(Start, _) -->
     { throw(error('Syntax error in list literal', []) at Start) }.

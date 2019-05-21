@@ -168,7 +168,49 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 <constant> ::= <integer> | <boolean> | <float> 
     \alt \textbf{(\,\,)} | <string> | <char>
 
-% TODO: tuple expression
+<tuple expression> ::= <logical or> \textbf{,} <tuple expression>
+    \alt <logical or>
+
+<logical or> ::= <logical and> \textbf{and} <logical or>
+    \alt <logical and>
+
+<logical and> ::= <expression none 0> \textbf {and} <logical and>
+    \alt <expression none 0>
+
+<expression none N> ::= <expression right N> <operator none N>\\ <expression none N>
+    \alt <expression right N>
+
+<expression right N> ::= <expression left N> <operator right N>\\ <expression right N>
+    \alt <expression left N>
+
+<expression left N> ::= <expression postfix N> <operator left N>\\<expression left N>
+    \alt <expression postfix N>
+
+<expression postfix N> ::= <expression prefix N> <operator postfix N>
+    \alt <expression prefix N>
+
+<expression prefix 20> ::= <operator prefix 20> <application>
+    \alt <application>
+
+<expression prefix N> ::= <operator prefix N> <expression none (N-1)>
+    \alt <expression none (N-1)>
+
+<application> ::= <atomic expression> <application>
+    \alt <atomic expression>
+
+<atomic expression> ::= <constant>
+    \alt \textbf{(} <expression sequence> \textbf{)}
+    \alt <list expression>
+    \alt <lambda expression>
+    \alt \textbf{\`} <operator>
+    \alt <identifier>
+    \alt <type name>
+
+<lambda expression> ::= \textbf{\{ |} <formal parameters> \textbf{|} <expression sequence> \textbf{\}}
+
+<list expression> ::= \textbf{[} \,\textbf{]}
+    \alt \textbf{[} <tuple expression> \textbf{]}
+    \alt \textbf{[} <tuple expression> \textbf{|} <logical or> \textbf{]}
 
 \end{grammar}
 
