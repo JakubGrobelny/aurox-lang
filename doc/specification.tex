@@ -48,7 +48,7 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 
 <identifier> ::= <lowercase> <alphanum>
 
-<type identifier> ::= <uppercase> <alphanum>
+<type name> ::= <uppercase> <alphanum>
 
 <alphanum> ::= <alphanum char> <alphanum> | $\epsilon$
 
@@ -65,6 +65,8 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 
 <exponent> ::= <e> \textbf{-} <integer>
     \alt <e> <integer>
+
+<boolean> ::= \textbf{false} | \textbf{true}
 
 <string> ::= \textbf{\"} <char sequence> \textbf{\"} | \textbf{\"}\textbf{\"}
 
@@ -84,6 +86,12 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
     | \textbf{\textbackslash \"}
     | \textbf{\textbackslash \'}
 
+<program> ::= <operator declaration> <program>
+    \alt <import> <program>
+    \alt <expression sequence> <program>
+    \alt <definition> <program>
+    \alt $\epsilon$
+
 <operator declaration> ::= \textbf{defop} <operator> <integer> <associativity>
 
 <associativity> ::= \textbf{left} | \textbf{right} 
@@ -95,7 +103,7 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
     \alt <type name> <import list>
 
 <definition> ::= \textbf{define} <function name> <formal parameters> 
-    \textbf{:} <type> \textbf{=} \textbf{end}
+    \textbf{:} \\<type> \textbf{=} <expression sequence> \textbf{end}
 
 <function name> ::= <identifier> | \textbf{(} <operator> \textbf{)}
 
@@ -119,7 +127,48 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 <type definition> ::= \textbf{type} <type name> <formal parameters> \textbf{with}\\
     <type constructors> \textbf{end}
 
-<type constructors> ::= 
+<type constructors> ::= \textbf{case} <type name> <atomic type>
+    \alt \textbf{case} <type name>
+
+<expression sequence> ::= <expression>
+    \alt <expression> \textbf{;} <expression sequence>
+
+<expression> ::= <pattern matching> | <let definition> 
+    \alt <conditional expression> | <tuple expression>
+
+<let definition> ::= \textbf{let} <variable name> \textbf{:} <type> \textbf{=}\\
+    <expression sequence> \textbf{in} <expression sequence> \textbf{end}
+
+<conditional expression> ::= \textbf{if} <expression sequence> \textbf{then} \\
+    <expression sequence> \textbf {else} <expression sequence> \textbf{end}
+
+<pattern matching> ::= \textbf{match} <expression sequence> \textbf{with} \\
+    <pattern matching cases> \textbf{end}
+
+<pattern matching cases> ::= <pattern case> <pattern matching cases>
+    \alt $\epsilon$
+
+<pattern case> ::= \textbf{case} <pattern> \textbf{=>} <expression sequence>
+
+<pattern> ::= <deconstructor pattern>
+    \alt <deconstructor pattern> \textbf{,} <pattern>
+
+<deconstructor pattern> ::= <type name> <atomic pattern>
+    \alt <atomic pattern>
+
+<atomic pattern> ::= <variable name> | <type name>
+    \alt \textbf{(} <pattern> \textbf{)}
+    \alt <list pattern>
+    \alt <constant>
+
+<list pattern> ::= \textbf{[} <pattern> \textbf{|} <variable name> \textbf{]}
+    \alt \textbf{[} <pattern> \textbf{]}
+    \alt \textbf{[\,\,]}
+
+<constant> ::= <integer> | <boolean> | <float> 
+    \alt \textbf{(\,\,)} | <string> | <char>
+
+% TODO: tuple expression
 
 \end{grammar}
 
