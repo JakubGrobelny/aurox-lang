@@ -125,7 +125,7 @@ defop -  10 left
 defop +  10 left
 defop *  12 left
 defop /  12 left
-defop ^  15 left
+defop ^  15 right
 defop -  18 prefix
 
 define (+) a b : Int -> Int -> Int =

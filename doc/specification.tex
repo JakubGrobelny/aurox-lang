@@ -3,6 +3,8 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{syntax}
+\usepackage{proof}
+\usepackage{stmaryrd}
 
 \setlength{\grammarindent}{5em}
 
@@ -218,6 +220,114 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 
 \section{Type system}
 
+
+\infer{\Gamma \vdash e_1 \, e_2 :: \tau}
+      {\Gamma \vdash e_1 :: \alpha \shortrightarrow \tau & \Gamma \vdash e_2 :: \alpha}
+
+$ $\newline 
+
+\infer{\Gamma \vdash if\, c\,\, then\, e_1\,\, else\, e_2\,\, end :: \tau}
+      {\Gamma \vdash c :: Bool & \Gamma \vdash e_1 :: \tau & \Gamma \vdash e_2 :: \tau}
+
+$ $\newline 
+
+\infer{\Gamma \vdash [\,] :: [\tau]}
+      {}
+
+$ $\newline 
+
+\infer{\Gamma \vdash [e_1, e_2, ... e_n] :: [\tau]}
+      {\Gamma \vdash e_1 :: \tau & \Gamma \vdash [e_2, ..., e_n] :: [\tau]}
+
+$ $\newline 
+
+\infer{\Gamma \vdash [e_1, e_2, ... e_n \,|\, e_{n+1}] :: [\tau]}
+      {\Gamma \vdash [e_1, e_2, ... e_n] :: [\tau] & \Gamma \vdash e_{n+1} :: [\tau]}
+
+$ $\newline 
+
+\infer{\Gamma \vdash e_1, e_2 :: \tau_1, \tau_2}
+      {\Gamma \vdash e_1 :: \tau_1 & \Gamma \vdash e_2 :: \tau_2}
+
+$ $\newline 
+
+\infer{\Gamma \vdash e_1; e_2; ... e_n :: \tau}
+      {\Gamma \vdash e_n :: \tau}
+
+$ $\newline 
+
+\infer{\Gamma \vdash e_1\, and\, e_2 :: Bool}
+      {\Gamma \vdash e_1 :: Bool & \Gamma \vdash e_2 :: Bool}
+
+$ $\newline 
+
+\infer{\Gamma \vdash e_1\, or\, e_2 :: Bool}
+    {\Gamma \vdash e_1 :: Bool & \Gamma \vdash e_2 :: Bool}
+      
+$ $\newline
+\infer{\Gamma \vdash x :: \tau}
+      {\Gamma(x) = \tau}  
+
+    %   TODO: char, string, float
+
+$ $\newline
+\infer{\Gamma \vdash n :: Int}
+      {}
+
+$ $\newline
+\infer{\Gamma \vdash x :: Float}
+    {}  
+
+$ $\newline
+\infer{\Gamma \vdash (\,) :: Unit}
+      {}
+
+$ $\newline
+\infer{\Gamma \vdash true :: Bool}
+      {}
+
+$ $\newline
+\infer{\Gamma \vdash false :: Bool}
+    {}
+    
+
+
+
+$ $\newline
+Jeżeli $\otimes$ jest operatorem binarnym, to wówczas\\\\
+\infer{\Gamma \vdash e_1 \otimes e_2 :: \tau}
+      {\Gamma \vdash \otimes :: \alpha \shortrightarrow \beta \shortrightarrow \tau 
+      & \Gamma \vdash e_1 :: \alpha & \Gamma \vdash e_2 :: \beta}
+
+$ $\newline
+Jeżeli $\otimes$ jest prefiksowym operatorem unarnym, to wówczas\\\\
+\infer{\Gamma \vdash \otimes\, e :: \tau}
+      {\Gamma \vdash \otimes :: \alpha \shortrightarrow \tau 
+      & \Gamma \vdash e :: \alpha}
+
+$ $\newline
+Jeżeli $\otimes$ jest postfiksowym operatorem unarnym, to wówczas\\\\
+\infer{\Gamma \vdash e\,\otimes :: \tau}
+    {\Gamma \vdash \otimes :: \alpha \shortrightarrow \tau 
+    & \Gamma \vdash e :: \alpha}
+
 \end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
