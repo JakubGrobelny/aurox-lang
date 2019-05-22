@@ -273,10 +273,13 @@ $ $\newline
 $ $\newline
 \infer{\Gamma \vdash n :: Int}
       {}
+,\,\,gdzie $n$ jest liczbą całkowitą
+
 
 $ $\newline
 \infer{\Gamma \vdash x :: Float}
     {}  
+    ,\,\,gdzie $x$ jest liczbą rzeczywistą
 
 $ $\newline
 \infer{\Gamma \vdash (\,) :: Unit}
@@ -289,9 +292,18 @@ $ $\newline
 $ $\newline
 \infer{\Gamma \vdash false :: Bool}
     {}
-    
 
+$ $\newline
+\infer{\Gamma \vdash s :: String}
+      {}
+,\,\,gdzie $s$ jest napisem.
 
+Prawdziwa jest również równoważność $String \equiv [Char]$
+
+$ $\newline
+\infer{\Gamma \vdash c :: Char}
+      {}
+,\,\,gdzie $c$ jest znakiem
 
 $ $\newline
 Jeżeli $\otimes$ jest operatorem binarnym, to wówczas\\\\
@@ -310,6 +322,59 @@ Jeżeli $\otimes$ jest postfiksowym operatorem unarnym, to wówczas\\\\
 \infer{\Gamma \vdash e\,\otimes :: \tau}
     {\Gamma \vdash \otimes :: \alpha \shortrightarrow \tau 
     & \Gamma \vdash e :: \alpha}
+
+$ $\newline
+\infer{\Gamma \vdash let\, x\, := \, e_1 \, in \, e_2 \, end :: \tau}
+      {\Gamma \vdash e_1 :: \alpha
+      & \Gamma [x \mapsto \alpha] \vdash e_2 :: \tau}
+
+$ $\newline
+\infer{\Gamma \vdash \{ |x |\,\, e\} :: \alpha \shortrightarrow \beta}
+      {\Gamma [x \mapsto \alpha]\vdash e :: \beta }
+
+$ $\newline
+\infer{\Gamma \vdash \{| x_1\, x_2\, ...\, x_n|\,\,e \} :: \alpha \shortrightarrow \beta}
+      {\Gamma [x_1 \mapsto \alpha] \vdash \{| x_2\, ...\, x_n|\,\,e\} :: \beta}
+
+$ $\newline
+\infer{\Gamma \vdash define\,\, x\, :=\, e\,\, end}
+      {\Gamma [x \mapsto \tau] \vdash e :: \tau}
+
+$ $\newline
+\infer{\Gamma \vdash define\,\, f\, x_1\, x_2\, ...\,x_n :=\,e\,\,end}
+      {\Gamma [f \mapsto \tau] \vdash \{|x_1\,x_2\,...\,x_n|\,\,e\} :: \tau}
+
+$ $\newline 
+\infer{\Gamma \vdash match \, e \, with \, end}
+      {\Gamma \vdash e :: Void}
+
+% TODO: fix
+$ $\newline 
+\infer{\Gamma \vdash match \, e \, with \, case \, p \Rightarrow e_0 :: \tau}
+      {\Gamma \vdash e :: \alpha
+      & \Gamma \vdash p :: \alpha
+      & \Gamma \vdash e_o :: \tau}
+
+$ $\newline
+\infer{\Gamma \vdash match \, e \, with \, case \, p_1 \Rightarrow e_1\,\,
+                                           case \, p_2 \Rightarrow e_2\,\, ...\,
+                                           case \, p_n \Rightarrow e_n :: \tau}
+      {\Gamma \vdash p_1 :: \alpha
+      & \Gamma \vdash e :: \alpha
+      & \Gamma \vdash e_1 :: \tau
+      & match \, e \, with \, case \, p_2 \Rightarrow e_2\,\,...\,
+                              case \, p_n \Rightarrow e_n :: \tau}
+
+$ $\newline
+Reguły dla całych programów. $\epsilon$ oznacza pusty program.\\
+
+\infer{\vdash \epsilon}
+      {}
+
+$ $\newline
+\infer{\Gamma \vdash p_1 \,\, p_2 \,\, ...\,\, p_n}
+      {\Gamma \vdash p_1 
+      & \Gamma \vdash p_2\,\,...\,\,p_n}
 
 \end{document}
 
