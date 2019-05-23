@@ -218,8 +218,29 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 
 \section{Semantics}
 
-\section{Type system}
+\infer{\rho \vdash x \Downarrow v}
+      {\rho(x) = v}
 
+$ $\newline 
+
+If $c$ is a constant, then\,\,
+\infer{\rho \vdash c \Downarrow c}
+      {}
+
+$ $\newline 
+
+\infer{\rho \vdash if\,\, e_1 \,\, then \,\, e_2 \,\, else\,\, e_3 \,\, end \Downarrow v}
+      {\rho \vdash e_1 \Downarrow true
+      & \rho \vdash e_2 \Downarrow v}
+
+$ $\newline 
+
+\infer{\rho \vdash if\,\, e_1 \,\, then \,\, e_2 \,\, else\,\, e_3 \,\, end \Downarrow v}
+      {\rho \vdash e_1 \Downarrow false
+      & \rho \vdash e_3 \Downarrow v}
+      
+
+\section{Type system}
 
 \infer{\Gamma \vdash e_1 \, e_2 :: \tau}
       {\Gamma \vdash e_1 :: \alpha \shortrightarrow \tau & \Gamma \vdash e_2 :: \alpha}
@@ -273,13 +294,13 @@ $ $\newline
 $ $\newline
 \infer{\Gamma \vdash n :: Int}
       {}
-,\,\,gdzie $n$ jest liczbą całkowitą
+,\,\,where $n$ is an integer
 
 
 $ $\newline
 \infer{\Gamma \vdash x :: Float}
     {}  
-    ,\,\,gdzie $x$ jest liczbą rzeczywistą
+    ,\,\,where $x$ is a real number
 
 $ $\newline
 \infer{\Gamma \vdash (\,) :: Unit}
@@ -296,29 +317,29 @@ $ $\newline
 $ $\newline
 \infer{\Gamma \vdash s :: String}
       {}
-,\,\,gdzie $s$ jest napisem.
+,\,\,where $s$ is a string.
 
-Prawdziwa jest również równoważność $String \equiv [Char]$
+The following equivalence is true $String \equiv [Char]$
 
 $ $\newline
 \infer{\Gamma \vdash c :: Char}
       {}
-,\,\,gdzie $c$ jest znakiem
+,\,\,where $c$ is a character
 
 $ $\newline
-Jeżeli $\otimes$ jest operatorem binarnym, to wówczas\\\\
+If $\otimes$ is a binary operator, then\\\\
 \infer{\Gamma \vdash e_1 \otimes e_2 :: \tau}
       {\Gamma \vdash \otimes :: \alpha \shortrightarrow \beta \shortrightarrow \tau 
       & \Gamma \vdash e_1 :: \alpha & \Gamma \vdash e_2 :: \beta}
 
 $ $\newline
-Jeżeli $\otimes$ jest prefiksowym operatorem unarnym, to wówczas\\\\
+If $\otimes$ is prefix unary operator, then\\\\
 \infer{\Gamma \vdash \otimes\, e :: \tau}
       {\Gamma \vdash \otimes :: \alpha \shortrightarrow \tau 
       & \Gamma \vdash e :: \alpha}
 
 $ $\newline
-Jeżeli $\otimes$ jest postfiksowym operatorem unarnym, to wówczas\\\\
+If $\otimes$ is postfix unary operator, then\\\\
 \infer{\Gamma \vdash e\,\otimes :: \tau}
     {\Gamma \vdash \otimes :: \alpha \shortrightarrow \tau 
     & \Gamma \vdash e :: \alpha}
