@@ -238,7 +238,6 @@ $ $\newline
 \infer{\rho \vdash if\,\, e_1 \,\, then \,\, e_2 \,\, else\,\, e_3 \,\, end \Downarrow v}
       {\rho \vdash e_1 \Downarrow false
       & \rho \vdash e_3 \Downarrow v}
-      
 
 \section{Type system}
 
@@ -357,14 +356,6 @@ $ $\newline
 \infer{\Gamma \vdash \{| x_1\, x_2\, ...\, x_n|\,\,e \} :: \alpha \shortrightarrow \beta}
       {\Gamma [x_1 \mapsto \alpha] \vdash \{| x_2\, ...\, x_n|\,\,e\} :: \beta}
 
-$ $\newline
-\infer{\Gamma \vdash define\,\, x\, :=\, e\,\, end}
-      {\Gamma [x \mapsto \tau] \vdash e :: \tau}
-
-$ $\newline
-\infer{\Gamma \vdash define\,\, f\, x_1\, x_2\, ...\,x_n :=\,e\,\,end}
-      {\Gamma [f \mapsto \tau] \vdash \{|x_1\,x_2\,...\,x_n|\,\,e\} :: \tau}
-
 $ $\newline 
 \infer{\Gamma \vdash match \, e \, with \, end}
       {\Gamma \vdash e :: Void}
@@ -387,33 +378,23 @@ $ $\newline
                               case \, p_n \Rightarrow e_n :: \tau}
 
 $ $\newline
-Reguły dla całych programów. $\epsilon$ oznacza pusty program.\\
+Rules for entire programs. $\epsilon$ stands for an empty program.\\
 
 \infer{\vdash \epsilon}
       {}
 
 $ $\newline
-\infer{\Gamma \vdash p_1 \,\, p_2 \,\, ...\,\, p_n}
-      {\Gamma \vdash p_1 
-      & \Gamma \vdash p_2\,\,...\,\,p_n}
+\infer{\Gamma \vdash define\,\, x\, :=\, e\,\, end \,\, p_1 \, ...\, p_n}
+      {\Gamma [x\mapsto \tau]\vdash e :: \tau
+      & \Gamma [x \mapsto \tau]\vdash p_1 \,...\, p_n }
+
+$ $\newline
+\infer{\Gamma \vdash define\,\, f\, x_1\, x_2\, ...\,x_n :=\,e\,\,end\,\, p_1 \,...\, p_n}
+      {\Gamma [f \mapsto \tau] \vdash \{|x_1\,x_2\,...\,x_n|\,\,e\} :: \tau
+      & \Gamma [f \mapsto \tau] \vdash \, p_1 \, ...\, p_n}
+
+$ $\newline
+\infer{\Gamma \vdash e \, \,\,p_1\,...\,p_n}
+      {\Gamma \vdash e :: \tau}
 
 \end{document}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
