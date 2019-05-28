@@ -179,22 +179,22 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 <logical and> ::= <expression none 0> \textbf {and} <logical and>
     \alt <expression none 0>
 
-<expression none N> ::= <expression right N> <operator none N>\\ <expression none N>
+<expression none N> ::= <expression right N> <operator none N>\footnote{Operator defined with \texttt{none} associativity and \texttt{N} priority}\\ <expression none N>
     \alt <expression right N>
 
-<expression right N> ::= <expression left N> <operator right N>\\ <expression right N>
+<expression right N> ::= <expression left N> <operator right N>\footnote{Operator defined with \texttt{right} associativity and \texttt{N} priority}\\ <expression right N>
     \alt <expression left N>
 
-<expression left N> ::= <expression postfix N> <operator left N>\\<expression left N>
+<expression left N> ::= <expression postfix N> <operator left N>\footnote{Operator defined with \texttt{left} associativity and \texttt{N} priority}\\<expression left N>
     \alt <expression postfix N>
 
-<expression postfix N> ::= <expression prefix N> <operator postfix N>
+<expression postfix N> ::= <expression prefix N> <operator postfix N>\footnote{Operator defined with \texttt{postfix} associativity and \texttt{N} priority}
     \alt <expression prefix N>
 
-<expression prefix 20> ::= <operator prefix 20> <application>
+<expression prefix 20> ::= <operator prefix 20>\footnote{Operator defined with \texttt{prefix} associativity and \texttt{20} priority} <application>
     \alt <application>
 
-<expression prefix N> ::= <operator prefix N> <expression none (N+1)>
+<expression prefix N> ::= <operator prefix N>\footnote{Operator defined with \texttt{prefix} associativity and \texttt{N} priority} <expression none (N+1)>
     \alt <expression none (N+1)>
 
 <application> ::= <atomic expression> <application>
@@ -224,10 +224,10 @@ Any character sequence beginning with character \texttt{\#} ending with LF are
 $ $\newline 
 
 If $c$ is a constant, then\,\,
-\infer{\rho \vdash c \Downarrow c}
+\infer{c \Downarrow c}
       {}
 
-$ $\newline 
+$ $\newline
 
 \infer{\rho \vdash if\,\, e_1 \,\, then \,\, e_2 \,\, else\,\, e_3 \,\, end \Downarrow v}
       {\rho \vdash e_1 \Downarrow true
@@ -239,12 +239,120 @@ $ $\newline
       {\rho \vdash e_1 \Downarrow false
       & \rho \vdash e_3 \Downarrow v}
 
+
+$ $\newline 
+
+\infer{\rho \vdash e_1\,\, and\,\, e_2 \Downarrow true}
+    {\rho \vdash e_1 \Downarrow true
+    & \rho \vdash e_2 \Downarrow true}
+
+
+$ $\newline 
+
+\infer{\rho \vdash e_1\,\, and\,\, e_2 \Downarrow false}
+      {\rho \vdash e_1 \Downarrow false}
+
+$ $\newline 
+
+\infer{\rho \vdash e_1\,\, and\,\, e_2 \Downarrow false}
+      {\rho \vdash e_1 \Downarrow false
+      & \rho \vdash e_2 \Downarrow false}
+
+$ $\newline 
+
+\infer{\rho \vdash e_1\,\, or\,\, e_2 \Downarrow false}
+    {\rho \vdash e_1 \Downarrow false
+    & \rho \vdash e_2 \Downarrow false}
+      
+      
+$ $\newline 
+      
+\infer{\rho \vdash e_1\,\, or\,\, e_2 \Downarrow true}
+      {\rho \vdash e_1 \Downarrow true}
+
+$ $\newline 
+
+\infer{\rho \vdash e_1\,\, or\,\, e_2 \Downarrow true}
+    {\rho \vdash e_1 \Downarrow true
+    & \rho \vdash e_2 \Downarrow true}
+
+$ $\newline
+\infer{\rho \vdash \{|x|\,\, e_1\} \, e_2 \Downarrow v}
+      {\rho \vdash e_2 \Downarrow v_0
+      &\rho [x \mapsto v_0] \vdash e_1 \Downarrow v}
+
+$ $\newline
+\infer{\rho \vdash \{|x|\,\, e_1\} \, e_2 \Downarrow v}
+    {\rho \vdash e_2 \Downarrow v_0
+    &\rho [x \mapsto v_0] \vdash e_1 \Downarrow v}
+
+$ $\newline
+\infer{\rho \vdash [\,] :: [\,]}
+{}
+
+$ $\newline
+\infer{\rho \vdash [e_1, e_2,\, ...\,, \,e_n] \Downarrow [v_1, v_2, \, ...\,,\,v_n]}
+      {\rho \vdash e_1 \Downarrow v_1
+      &\rho \vdash [e_2,\,...\,,\,e_n] \Downarrow [v_2,\,...\,v_n]}
+
+$ $\newline
+\infer{\rho \vdash [e_1, e_2,\, ...\,, \,e_n \,|\, t] \Downarrow [v_1, v_2, \, ...\,,\,v_n,\,v_{n+1}\,...\,v_{n+k}]}
+    {\rho \vdash e_1 \Downarrow v_1
+    &\rho \vdash [e_2,\,...\,,\,e_n] \Downarrow [v_2,\,...\,v_n]
+    &\rho \vdash t \Downarrow [v_{n+1},\,...\,v_{n+k}]}
+
+$ $\newline
+\infer{\rho \vdash let\, x \, := \, e_1 \, in \, e_2\, end \Downarrow v}
+      {\rho \vdash e_1 \Downarrow v_0
+      &\rho [x \mapsto v_0] \vdash e_2 \Downarrow v}
+
+$ $\newline
+\infer{\rho \vdash e_1;\,e_2;\,...;\,e_n \Downarrow v}
+      {\rho \vdash e_1 \Downarrow v_0
+      &\rho \vdash e_2;\,...;\,e_n \Downarrow v}
+
+$ $\newline
+$\rho'$ means the environment after unification with the pattern.\\
+
+\infer{\rho \vdash match\, e\, with\, case\, p\, \Rightarrow\,e_1\, end \Downarrow v}
+      {\rho \vdash e \Downarrow v_0
+      & v_0 = p
+      & \rho' \vdash e_1 \Downarrow v}
+
+$ $\newline
+\infer{\rho \vdash match\, e\, with\, case\, p_1\, \Rightarrow\,e_1\,...\, case\, p_n\, \Rightarrow\,e_n\,end \Downarrow v}
+    {\rho \vdash e \Downarrow v_0
+    & v_0 = p_1
+    & \rho' \vdash e_1 \Downarrow v}
+
+$ $\newline
+\infer{\rho \vdash match\, e\, with\, case\, p_1\Rightarrow\,e_1\,case\,p_2\Rightarrow e_2\,...\, case \,p_n\Rightarrow e_n\,end\Downarrow v}
+    {\rho \vdash e \Downarrow v_0
+    & v_0 \neq p_1
+    & \rho \vdash match\, e\, with\, case\, p_2\Rightarrow\,e_2\,...\,case\,p_n\Rightarrow\,e_n\Downarrow v}
+
+$ $\newline
+Rules for entire programs. $\epsilon$ stands for empty program.\\
+
+\infer{\vdash \epsilon}
+      {}
+
+$ $\newline
+\infer{\rho \vdash define\,x\,:=\, e_1\, end\,\,\, p_1\,...\,p_n}
+      {\rho [x \mapsto x] \vdash e_1 \Downarrow v
+      &\rho [x \mapsto v] \vdash p_1\,...\,p_n}
+
+$ $\newline
+\infer{\rho \vdash e\, p_1\,...\,p_n}
+      {\rho \vdash e \Downarrow v
+      &\rho \vdash p_1\,...\,p_n}
+
 \section{Type system}
 
 \infer{\Gamma \vdash e_1 \, e_2 :: \tau}
       {\Gamma \vdash e_1 :: \alpha \shortrightarrow \tau & \Gamma \vdash e_2 :: \alpha}
 
-$ $\newline 
+$ $\newline
 
 \infer{\Gamma \vdash if\, c\,\, then\, e_1\,\, else\, e_2\,\, end :: \tau}
       {\Gamma \vdash c :: Bool & \Gamma \vdash e_1 :: \tau & \Gamma \vdash e_2 :: \tau}
@@ -288,7 +396,6 @@ $ $\newline
 \infer{\Gamma \vdash x :: \tau}
       {\Gamma(x) = \tau}  
 
-    %   TODO: char, string, float
 
 $ $\newline
 \infer{\Gamma \vdash n :: Int}
@@ -395,6 +502,7 @@ $ $\newline
 
 $ $\newline
 \infer{\Gamma \vdash e \, \,\,p_1\,...\,p_n}
-      {\Gamma \vdash e :: \tau}
+      {\Gamma \vdash e :: \tau
+      & \Gamma \vdash p_1\,...\,p_n}
 
 \end{document}
