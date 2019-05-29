@@ -1,5 +1,6 @@
-vscode
-vscode/*
+.vscode
+.vscode/*
+.vscode/
 *.synctex.gz
 *.aux
 *.fdb_latexmk
