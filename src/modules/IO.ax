@@ -21,3 +21,19 @@ end
 define print_any : a -> Unit =
     print . show
 end
+
+define println str : String -> Unit =
+    print str;
+    print "\n"
+end
+
+define error msg code : String -> Int -> a =
+    print msg;
+    exit code;
+    error msg code
+end
+
+
+
+
+
