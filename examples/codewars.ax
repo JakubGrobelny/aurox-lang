@@ -1,0 +1,57 @@
+import
+    IO
+    List
+    Lazy	
+    Dict
+end
+
+define unwrap m : Maybe a -> a =
+    match m with
+	case Nothing => error "unwrap: got Nothing!\n" 1
+	case Just m => m
+    end
+end
+
+define unwrap_or m default : Maybe a -> a -> a =
+    match m with
+	case Nothing => default
+	case Just m => m
+    end
+end
+
+define div a b : Int -> Int -> Int =
+    match a / b with
+	case Just quot => quot
+	case Nothing => error "Division by zero!\n" 1
+    end
+end
+
+define mod a b : Int -> Int -> Int =
+    a - div a b * b 
+end
+
+# find the nth digit of a number
+
+define nth_digit num digit : Int -> Int -> Int =
+    if digit < 0 
+	then -1
+	else if num < 0
+	    then nth_digit (-num) digit
+	    else if digit == 1
+		then mod num 10
+		else nth_digit (div num 10) (digit - 1)
+	    end
+	end
+    end
+end
+
+# number of people in the bus
+define people_in_bus stops : [(Int,Int)] -> Int =
+    foldl {|acc stop| acc + first stop - second stop} 0 stops
+end
+
+
+
+
+
+

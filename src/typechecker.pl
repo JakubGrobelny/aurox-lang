@@ -42,9 +42,9 @@ typecheck_environment([Var-(Val at ValPos, Type, Pos) | _], Env) :-
     !,
     print_type_error(
         ValPos,
-        'The type ~w of value ~w does not match the type \c 
-         annotation ~w specified in the definition of ~w',
-        [type(ValType), Val, type(Type), Var]
+        'The type ~w of variable \'~w\' does not match the type \c 
+         annotation ~w specified in its definition!',
+        [type(ValType), Var, type(Type)]
     ).
 typecheck_environment([Var-(_ at ValPos, _, _) | _], _) :-
     !,
@@ -104,7 +104,8 @@ infer_type(Env, [Expr], Type, Pos) :-
     infer_type(Env, Expr, Type, Pos).
 infer_type(Env, [H | T], Type, Pos) :-
     !,
-    infer_type(Env, H, _, Pos),
+    infer_type(Env, H, HType, Pos),
+    typecheck_sequence(Env, HType, Pos),
     infer_type(Env, T, Type, Pos).
 infer_type(_, int(_), adt('Int', []), _) :- !.
 infer_type(_, float(_), adt('Float', []), _) :- !.
@@ -171,6 +172,14 @@ typecheck_adt_argument(Got, Expected, Pos) :-
         Pos,
         'constructor argument type mismatch, expected ~w, got ~w',
         [type(Expected), type(Got)]
+    ).
+
+typecheck_sequence(_, adt('Unit', []), _) :- !.
+typecheck_sequence(_, Type, Pos) :-
+    print_type_error(
+        Pos,
+        'invalid expression in sequence (expected type Unit, got ~w)!',
+        [type(Type)]
     ).
 
 typcheck_pmatching(_, [], adt('Void', []), _, _) :- !.

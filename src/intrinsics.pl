@@ -12,7 +12,8 @@ import_core_definitions(CoreEnv) :-
                 'Char' : (0, builtin),
                 'Void' : (0, builtin),
                 'Float': (0, builtin),
-                'Unit' : (0, builtin)
+                'Unit' : (0, builtin),
+                'Mutable' : (1, builtin)
             },
             '__add':(
                 bfun('__add') at builtin,
@@ -31,7 +32,12 @@ import_core_definitions(CoreEnv) :-
             ),
             '__div':(
                 bfun('__div') at builtin,
-                (tuple(2, (adt('Int', []), adt('Int', [])))->adt('Int', [])),
+                (tuple(2, (adt('Int', []), adt('Int', [])))->adt('Maybe', [adt('Int', [])])),
+                builtin
+            ),
+            '__mod':(
+                bfun('__mod') at builtin,
+                (tuple(2, (adt('Int', []), adt('Int', [])))->adt('Maybe', [adt('Int', [])])),
                 builtin
             ),
             '__pow':(
@@ -178,6 +184,26 @@ import_core_definitions(CoreEnv) :-
                 bfun('__read_char') at bultin,
                 (adt('Unit', [])->adt('Char', [])),
                 builtin
+            ),
+            '__make_mut':(
+                bfun('__make_mut') at builtin,
+                (param(a)->adt('Mutable', [param(a)])),
+                builtin
+            ),
+            '__unwrap_mut':(
+                bfun('__unwrap_mut') at builtin,
+                (adt('Mutable', [param(a)])->param(a)),
+                builtin
+            ),
+            '__update_mut':(
+                bfun('__update_mut') at builtin,
+                (tuple(2, (adt('Mutable', [param(a)]), param(a)))->adt('Unit', [])),
+                builtin
+            ),
+            '__clone':(
+                bfun(duplicate_term) at builtin,
+                (param(a)->param(a)),
+                builtin
             )
         ]
     ).
@@ -191,11 +217,13 @@ import_core_definitions(CoreEnv) :-
 '__mult'((L, R), Res) :-
     Res is L * R.
 
-'__div'((_, 0), _) :-
-    !,
-    throw(runtime_error(division_by_zero)).
-'__div'((L, R), Res) :-
+'__div'((_, 0), 'Nothing') :- !.
+'__div'((L, R), 'Just'/Res) :-
     Res is L div R.
+
+'__mod'((_, 0), 'Nothing') :- !.
+'__mod'((L, R), 'Just'/Res) :-
+    Res is L mod R.
 
 '__pow'((L, R), Res) :-
     Res is L ** R.
@@ -301,4 +329,14 @@ import_core_definitions(CoreEnv) :-
 
 '__read_char'(_, C) :-
     io:read_char(C).
+
+'__make_mut'(Val, 'Mut'/Copy) :-
+    copy_term(Val, Copy).
+
+'__unwrap_mut'('Mut'/Val, Copy) :-
+    copy_term(Val, Copy).
+
+'__update_mut'((Mutable, Val), unit) :-
+    setarg(2, Mutable, Val).
+
 

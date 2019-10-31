@@ -601,6 +601,11 @@ atomic_expression(Const, _) -->
     constant(Const),
     !.
 atomic_expression(id(Operator), _) -->
+    ['~' at _],
+    !,
+    [op(Op) at _],
+    { mark_unary_operator(Op, Operator) }.
+atomic_expression(id(Operator), _) -->
     ['`' at _],
     !,
     [op(Operator) at _].

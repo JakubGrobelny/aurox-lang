@@ -1,0 +1,17 @@
+import
+    Imperative
+    List
+    IO
+end
+
+define fib n : Int -> Int =
+    let fs := (mut 0, mut 1) in
+        do_n_times n { |u|
+            let temp := &first fs in
+                first fs <- &second fs + temp;
+                second fs <- temp
+            end
+        };
+        &first fs
+    end
+end

@@ -15,7 +15,7 @@ print_error(Pos, MsgFormat, MsgArgs) :-
 
 print_error_and_halt(Pos, MsgFormat, MsgArgs) :-
     print_error(Pos, MsgFormat, MsgArgs),
-    halt.
+    throw(halt).
 
 dict_empty(Dict) :-
     \+ get_dict(_, Dict, _),

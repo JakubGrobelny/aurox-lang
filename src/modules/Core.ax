@@ -102,6 +102,13 @@ end
 
 define (>>=) := maybe_bind end
 
+define unwrap_or m def : Maybe a -> a -> a =
+    match m with
+        case Nothing => def
+        case Just a => a
+    end
+end
+
 # Either monad
 
 defop =>> 10 left
@@ -127,6 +134,7 @@ defop *  12 left
 defop /  12 left
 defop ^  15 right
 defop -  18 prefix
+defop %  12 left
 
 define (+) a b : Int -> Int -> Int =
     __add (a, b)
@@ -141,10 +149,7 @@ define (*) a b : Int -> Int -> Int =
 end
 
 define (/) a b : Int -> Int -> Maybe Int =
-    if b == 0
-        then Nothing
-        else Just (__div (a, b))
-    end
+    __div (a, b)
 end
 
 define (^) a b : Int -> Int -> Int =
@@ -153,6 +158,10 @@ end
 
 define (-) a : Int -> Int =
     __neg a
+end
+
+define (%) a b : Int -> Int -> Maybe Int =
+    __mod (a,b)
 end
 
 # Float arithmetic
@@ -238,4 +247,8 @@ define until p f a : (a -> Bool) -> (a -> a) -> a -> a =
         then until p f $ f a
         else a
     end
+end
+
+define unless p? : (a -> Bool) -> (a -> Bool) =
+    not . p?
 end

@@ -1,0 +1,61 @@
+defop <- 0 right
+defop & 20 prefix
+defop <<- 0 right
+
+define clone a : a -> a =
+    __clone a
+end
+
+define mut val : a -> Mutable a =
+    __make_mut val
+end
+
+define (&) mut : Mutable a -> a =
+    __unwrap_mut mut
+end
+
+define unwrap_mut mut : Mutable a -> a =
+    &mut
+end
+
+define (<-) mut val : Mutable a -> a -> Unit =
+    __update_mut (mut, val)
+end
+
+define (<<-) mmut val : Maybe (Mutable a) -> a -> Unit =
+    match mmut with
+        case Nothing => ()
+        case Just mut => mut <- val
+    end
+end
+
+define for_each range action : [a] -> (a -> Unit) -> Unit =
+    match range with
+        case [] => ()
+        case [i | is] =>
+            action i;
+            for_each is action
+    end
+end
+
+define while condition? action : (Unit -> Bool) -> (Unit -> Unit) -> Unit =
+    if condition? ()
+        then 
+            action ();
+            while condition? action
+        else ()
+    end
+end
+
+define do_n_times n action : Int -> (Unit -> Unit) -> Unit =
+    match n with
+        case 0 => ()
+        case _ =>
+            action ();
+            do_n_times (n-1) action
+    end
+end
+
+define do f : (a -> b) -> (a -> Unit) =
+    {|a| let x := f a in () end }
+end

@@ -9,9 +9,16 @@ repl :-
     repl(NewEnv, Operators, []).
 
 repl(Env, Ops, Deps) :-
+    catch(
+        try_repl(Env, Ops, Deps),
+        _,
+        repl(Env, Ops, Deps)
+    ).
+    
+try_repl(Env, Ops, Deps) :-
     read_input(Input),
     repl_eval(Input, Env, Ops, Deps, NewEnv, NewOps, NewDeps),
-    repl(NewEnv, NewOps, NewDeps).
+    try_repl(NewEnv, NewOps, NewDeps).
 
 read_input(Input) :-
     read_input([], Input).

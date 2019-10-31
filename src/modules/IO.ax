@@ -27,6 +27,10 @@ define println str : String -> Unit =
     print "\n"
 end
 
+define println_any : a -> Unit =
+    println . show
+end
+
 define error msg code : String -> Int -> a =
     print msg;
     exit code;

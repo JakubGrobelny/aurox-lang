@@ -18,7 +18,11 @@ define main u :=
         match n with
             case Nothing => print "Failed to read the number!\n"
             case Just n => 
-                print $ "Factorial of " ++ show n ++ " is " ++ show (n!) ++ "\n"
+                print $ "Factorial of " 
+                      ++ show n 
+                      ++ " is " 
+                      ++ show (n!) 
+                      ++ "\n"
         end
     end
 end

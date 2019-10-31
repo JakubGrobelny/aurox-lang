@@ -7,6 +7,13 @@
 :- ensure_loaded(eval).
 
 interpret_program(EntryPoint) :-
+    catch(
+        try_interpret_program(EntryPoint),
+        halt,
+        halt
+    ).
+
+try_interpret_program(EntryPoint) :-
     import_core_definitions(FreshEnv),
     import_core_module(FreshEnv, NewEnv, Operators), 
     parse_file(EntryPoint, Operators, AST),

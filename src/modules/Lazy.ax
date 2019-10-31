@@ -119,10 +119,10 @@ define stream_map f xs : (a -> b) -> Stream a -> Stream b =
     end
 end
 
-
-
-
-
-
-
+define stream_from_list xs : [a] -> Stream a =
+    match xs with
+	case [] => LNull
+	case [x | xs] => LCons (x, {|u| stream_from_list xs })
+    end
+end
 

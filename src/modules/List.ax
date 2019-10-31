@@ -38,9 +38,9 @@ define empty? xs : [a] -> Bool =
 end
 
 define (...) b e : Int -> Int -> [Int] =
-    match (b, e) with
-        case (a, a) => [a]
-        case _ => [b | b + 1 ... e ]
+    if b > e
+        then []
+        else [b | b + 1 ... e ]
     end
 end
 
@@ -217,3 +217,4 @@ define repeat x n : a -> Int -> [a] =
         case _ => [x | repeat x (n - 1)]
     end
 end
+
