@@ -15,7 +15,7 @@ define dict_insert k v d : k -> v -> Dict k v -> Dict k v =
         case DictLeaf => DictNode (DictLeaf, (k, v), DictLeaf)
         case DictNode (l, (key, val), r) => if k <= key
             then DictNode (dict_insert k v l, (key, val), r)
-            else DictNode (l, (key, val), dict_insert k v l)
+            else DictNode (l, (key, val), dict_insert k v r)
         end
     end
 end

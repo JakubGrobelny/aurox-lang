@@ -7,18 +7,15 @@ repl :-
     import_core_definitions(FreshEnv),
     import_core_module(FreshEnv, NewEnv, Operators),
     repl(NewEnv, Operators, []).
-
+    
 repl(Env, Ops, Deps) :-
+    read_input(Input),
     catch(
-        try_repl(Env, Ops, Deps),
+        repl_eval(Input, Env, Ops, Deps, NewEnv, NewOps, NewDeps),
         _,
         repl(Env, Ops, Deps)
-    ).
-    
-try_repl(Env, Ops, Deps) :-
-    read_input(Input),
-    repl_eval(Input, Env, Ops, Deps, NewEnv, NewOps, NewDeps),
-    try_repl(NewEnv, NewOps, NewDeps).
+    ),
+    repl(NewEnv, NewOps, NewDeps).
 
 read_input(Input) :-
     read_input([], Input).

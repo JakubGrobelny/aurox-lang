@@ -218,3 +218,22 @@ define repeat x n : a -> Int -> [a] =
     end
 end
 
+define enumerate xs : [a] -> [(Int, a)] =
+    let aux := {|f n xs|
+        match xs with
+            case [] => []
+            case [x | xs] => [(n, x) | f (n+1) xs]
+        end
+    } in fix aux 0 xs
+    end
+end
+
+define map_iter f xs : (a -> Int -> b) -> [a] -> [b] =
+    let aux := {|rec f i xs|
+        match xs with
+            case [] => []
+            case [x | xs] => [f x i | rec f (i+1) xs ]
+        end
+    } in fix aux f 0 xs
+    end
+end
