@@ -197,12 +197,21 @@ import_core_definitions(CoreEnv) :-
             ),
             '__update_mut':(
                 bfun('__update_mut') at builtin,
-                (tuple(2, (adt('Mutable', [param(a)]), param(a)))->adt('Unit', [])),
+                (
+                    tuple(2, (adt('Mutable', [param(a)]), param(a)))
+                    ->
+                    adt('Unit', [])
+                ),
                 builtin
             ),
             '__clone':(
                 bfun(duplicate_term) at builtin,
                 (param(a)->param(a)),
+                builtin
+            ),
+            '__unsafe_unwrap_mut':(
+                bfun('__unsafe_unwrap_mut') at builtin,
+                (adt('Mutable', [param(a)])->param(a)),
                 builtin
             )
         ]
@@ -339,4 +348,5 @@ import_core_definitions(CoreEnv) :-
 '__update_mut'((Mutable, Val), unit) :-
     setarg(2, Mutable, Val).
 
+'__unsafe_unwrap_mut'('Mut'/Mutable, Mutable).
 

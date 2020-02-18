@@ -237,3 +237,16 @@ define map_iter f xs : (a -> Int -> b) -> [a] -> [b] =
     } in fix aux f 0 xs
     end
 end
+
+define take_while p? xs : (a -> Bool) -> [a] -> ([a], [a]) =
+    match xs with
+        case [] => ([], [])
+        case [y | ys] =>
+            if p? y
+                then let rec := take_while p? ys in
+                    ([y | first rec], second rec)
+                end
+                else ([], xs)
+            end
+    end
+end

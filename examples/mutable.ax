@@ -15,3 +15,12 @@ define fib n : Int -> Int =
         &first fs
     end
 end
+
+define fact n : Int -> Int =
+    let fact := mut 1 in
+        for_each (2 ... n) { |i|
+            fact <$ (`* i)
+        };
+        &fact
+    end
+end 

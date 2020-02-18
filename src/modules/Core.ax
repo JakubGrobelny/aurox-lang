@@ -35,6 +35,22 @@ define (!=) l r : a -> a -> Bool =
     __cmp_neq (l, r)
 end
 
+type Ordering with
+    case OrdL
+    case OrdEq
+    case OrdG
+end
+
+define compare a b : a -> a -> Ordering =
+    if a < b
+        then OrdL
+        else if a == b
+            then OrdEq
+            else OrdG
+        end
+    end
+end
+
 # System
 
 define exit u : Int -> Unit =

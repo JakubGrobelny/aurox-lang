@@ -36,8 +36,3 @@ define error msg code : String -> Int -> a =
     exit code;
     error msg code
 end
-
-
-
-
-

@@ -1,6 +1,10 @@
-defop <- 0 right
+defop <- 0 none
 defop & 20 prefix
-defop <<- 0 right
+defop <<- 0 none
+defop <$ 0 left
+defop ++ 20 postfix
+defop -- 20 postfix
+
 
 define clone a : a -> a =
     __clone a
@@ -58,4 +62,16 @@ end
 
 define do f : (a -> b) -> (a -> Unit) =
     {|a| let x := f a in () end }
+end
+
+define (++) m : Mutable Int -> Unit =
+    m <- &m + 1
+end
+
+define (--) m : Mutable Int -> Unit =
+    m <- &m - 1
+end
+
+define (<$) m f : Mutable a -> (a -> a) -> () =
+    m <- f $ __unsafe_unwrap_mut m
 end

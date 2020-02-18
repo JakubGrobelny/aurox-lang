@@ -1,0 +1,99 @@
+import
+    List
+    IO
+end
+
+type Expr with
+    case Num Int
+    case Add (Expr, Expr)
+end
+
+define crash msg : String -> a =
+    error msg 1
+end
+
+define is_digit? c : Char -> Bool =
+    member c "0123456789"
+end
+
+define is_whitespace? c : Char -> Bool =
+    member c "\n\r \t"
+end
+
+define skip_whitespace : String -> String =
+    second . take_while is_whitespace?
+end
+
+define digit_to_int c : Char -> Int =
+    match c with
+        case '0' => 0
+        case '1' => 1
+        case '2' => 2
+        case '3' => 3
+        case '4' => 4
+        case '5' => 5
+        case '6' => 6
+        case '7' => 7
+        case '8' => 8
+        case '9' => 9
+        case _   => crash "not a digit"
+    end
+end
+
+define int_of_string : String -> Int =
+    foldl {|acc c| digit_to_int c + acc * 10} 0
+end
+
+define parse_number str : String -> (Maybe Int, String) =
+    let str := skip_whitespace str in
+        let digits := take_while is_digit? str in
+            match digits with
+                case [], rest => Nothing, rest
+                case digits, rest => Just $ int_of_string digits , rest
+            end
+        end
+    end
+end
+
+define expect c str : Char -> String -> String =
+    match str with
+        case [c | rest] => rest
+        case _ => crash "Unexpected character"
+    end
+end
+
+define parse_expr str : String -> (Expr, String) =
+    match parse_number str with
+        case Just number, rest => Num number, rest
+        case Nothing, str =>
+            let rest := expect '(' str 
+                     |> skip_whitespace
+                     |> expect '+'
+                     |> skip_whitespace
+            in
+                match parse_expr rest with
+                    case e0, rest => 
+                        match parse_expr rest with
+                            case e1, rest =>
+                                Add (e0, e1), (expect ')' . skip_whitespace) rest
+                        end
+                end
+            end
+    end
+end
+
+define eval expr : Expr -> Int =
+    match expr with
+        case Num n => n
+        case Add (a, b) => eval a + eval b
+    end
+end
+
+print "enter the expression: ";
+let line := read_line () in
+    match line with
+        case Nothing => crash "Invalid input\n"
+        case Just line =>
+            print . show $ parse_expr line |> first |> eval
+    end
+end
